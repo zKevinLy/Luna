@@ -2,17 +2,39 @@ import { css } from 'lit';
 
 export const Styles = css`
 .container {
-    display: grid;
     height: 100vh;
     width: 100vw;
-    grid-template-columns: repeat(9, 1fr); 
-    grid-template-rows: repeat(9, 1fr);
 }
 
-.nav-bar {
+.side-bar {
     background: #1e1e1e;
-    display: flex
-    flex-direction: column;
-    align-content: flex-start;
 }
+
+.top-bar {
+    background: #1e1e1e;
+}
+
+.container {
+    display: flex;
+}
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .side-bar {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .content {
+        order: 2;
+    }
+
+    .top-bar {
+        order: 3;
+    }
+}
+
 `;

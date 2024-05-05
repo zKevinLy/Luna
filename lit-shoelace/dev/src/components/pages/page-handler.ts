@@ -37,12 +37,25 @@ export class PageHandler extends LunaBasePage {
         break;
     }
     return html`
-      <div class="container">
-        <sidebar-items class="nav-bar row-start-1 row-span-9 col-start-1 col-span-1"></sidebar-items>
-        <topbar-items class="nav-bar row-start-1 row-span-1 col-start-2 col-span-9"></topbar-items>
-        ${activePageHtml}
-      </div>
+      <sl-resize-observer>
+<div class="container flex flex-col md:flex-row">
+    <!-- Topbar -->
+    <div class="top-bar md:order-2 md:w-full">
+        <topbar-items class="top-bar"></topbar-items>
+    </div>
 
+    <!-- Main Content -->
+    <div class="content md:order-3 md:w-full">
+        ${activePageHtml}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="side-bar md:order-1 md:w-full">
+        <sidebar-items class="side-bar"></sidebar-items>
+    </div>
+</div>
+
+      </sl-resize-observer>
     `;
   }
 

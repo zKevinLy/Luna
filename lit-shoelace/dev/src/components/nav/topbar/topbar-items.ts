@@ -21,7 +21,8 @@ export class TopbarItems extends LunaBaseComponent {
   render() {
     return html`
       <div class="topbar-items">      
-        <topbar-item ItemName="Search" SLIcon="search" @click="${(e) => this.PageSelection(e)}"></topbar-item>
+        <topbar-item ItemToolTip="Search" ItemName="Search" SLIcon="search" @click="${(e) => this.PageSelection(e)}"></topbar-item>
+        <topbar-item ItemToolTip="Filter" ItemName="Filter" SLIcon="filter" @click="${(e) => this.PageSelection(e)}"></topbar-item>
       </div>
     `
   }

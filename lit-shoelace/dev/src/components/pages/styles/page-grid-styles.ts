@@ -21,24 +21,24 @@ export const GridStyles = css`
 .col-start-8 { grid-column-start: 8; }
 .col-start-9 { grid-column-start: 9; }
 
-.row-span-1 { grid-row-end: span 1; }
-.row-span-2 { grid-row-end: span 2; }
-.row-span-3 { grid-row-end: span 3; }
-.row-span-4 { grid-row-end: span 4; }
-.row-span-5 { grid-row-end: span 5; }
-.row-span-6 { grid-row-end: span 6; }
-.row-span-7 { grid-row-end: span 7; }
-.row-span-8 { grid-row-end: span 8; }
-.row-span-9 { grid-row-end: span 9; }
+.row-span-1 { grid-row-end: auto / span 1; }
+.row-span-2 { grid-row-end: auto / span 2; }
+.row-span-3 { grid-row-end: auto / span 3; }
+.row-span-4 { grid-row-end: auto / span 4; }
+.row-span-5 { grid-row-end: auto / span 5; }
+.row-span-6 { grid-row-end: auto / span 6; }
+.row-span-7 { grid-row-end: auto / span 7; }
+.row-span-8 { grid-row-end: auto / span 8; }
+.row-span-9 { grid-row-end: auto / span 9; }
 
-.col-span-1 { grid-column-end: span 1; }
-.col-span-2 { grid-column-end: span 2; }
-.col-span-3 { grid-column-end: span 3; }
-.col-span-4 { grid-column-end: span 4; }
-.col-span-5 { grid-column-end: span 5; }
-.col-span-6 { grid-column-end: span 6; }
-.col-span-7 { grid-column-end: span 7; }
-.col-span-8 { grid-column-end: span 8; }
-.col-span-9 { grid-column-end: span 9; }
+.col-span-1 { grid-column-end: auto / span 1; }
+.col-span-2 { grid-column-end: auto / span 2; }
+.col-span-3 { grid-column-end: auto / span 3; }
+.col-span-4 { grid-column-end: auto / span 4; }
+.col-span-5 { grid-column-end: auto / span 5; }
+.col-span-6 { grid-column-end: auto / span 6; }
+.col-span-7 { grid-column-end: auto / span 7; }
+.col-span-8 { grid-column-end: auto / span 8; }
+.col-span-9 { grid-column-end: auto / span 9; }
 
 `;
