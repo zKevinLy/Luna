@@ -1,5 +1,4 @@
 import { LunaBaseProvider } from '../../../src/.base-elements/luna-base-provider';
-import { ANIME } from "@consumet/extensions"
 
 export class AnimeProvider extends LunaBaseProvider {
     static properties = {
@@ -15,13 +14,6 @@ export class AnimeProvider extends LunaBaseProvider {
     }
 
     getPopular() {
-        async () => {
-            // Create a new instance of the Gogoanime provider
-            const gogoanime = new ANIME.Gogoanime();
-            // Search for an anime. In this case, "One Piece"
-            const results = await gogoanime.search("One Piece");
-            // print the results
-            console.log(results);
-        };
+
     }
 }

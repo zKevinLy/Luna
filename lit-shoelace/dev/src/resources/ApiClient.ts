@@ -1,39 +1,47 @@
-import axios, { AxiosResponse } from 'axios';
-
-interface RequestOptions {
-    params?: any;
-    data?: any;
-}
-
 export class APIClient {
-    private baseURL: string;
+    baseURL;
 
-    constructor(baseURL: string) {
+    constructor(baseURL) {
         this.baseURL = baseURL;
     }
 
-    async get(endpoint: string, options?: RequestOptions): Promise<any> {
+    async get(endpoint, options) {
         const url = `${this.baseURL}/${endpoint}`;
-        const response: AxiosResponse = await axios.get(url, { params: options?.params });
-        return response.data;
+        const response = await fetch(url + this.buildQueryString(options?.params));
+        return await response.json();
     }
 
-    async post(endpoint: string, options?: RequestOptions): Promise<any> {
+    async post(endpoint, options) {
         const url = `${this.baseURL}/${endpoint}`;
-        const response: AxiosResponse = await axios.post(url, options?.data);
-        return response.data;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(options?.data)
+        });
+        return await response.json();
     }
 
-    async update(endpoint: string, options?: RequestOptions): Promise<any> {
+    async update(endpoint, options) {
         const url = `${this.baseURL}/${endpoint}`;
-        const response: AxiosResponse = await axios.put(url, options?.data);
-        return response.data;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(options?.data)
+        });
+        return await response.json();
     }
 
-    async delete(endpoint: string): Promise<boolean> {
+    async delete(endpoint) {
         const url = `${this.baseURL}/${endpoint}`;
-        const response: AxiosResponse = await axios.delete(url);
+        const response = await fetch(url, { method: 'DELETE' });
         return response.status === 204;
     }
-}
 
+    buildQueryString(params) {
+        if (!params) return '';
+        const queryString = Object.keys(params)
+            .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+            .join('&');
+        return `?${queryString}`;
+    }
+}

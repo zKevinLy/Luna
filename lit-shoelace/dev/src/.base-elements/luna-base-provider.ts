@@ -10,7 +10,6 @@ export class LunaBaseProvider extends APIClient {
 
   constructor() {
     super("https://example.com");
-    this.baseURL = this.ProviderBaseUrl;
   }
 
 }
