@@ -16,25 +16,16 @@ export const Styles = css`
 
 .container {
     display: flex;
+    flex-direction: column; /* For small screens, default */
 }
 
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .container {
-        flex-direction: column;
+        flex-direction: row; /* For medium and larger screens */
     }
 
     .side-bar {
-        display: flex;
-        flex-direction: row;
-    }
-
-    .content {
-        order: 2;
-    }
-
-    .top-bar {
-        order: 3;
+        order: -1; /* Move sidebar to the left */
     }
 }
-
 `;

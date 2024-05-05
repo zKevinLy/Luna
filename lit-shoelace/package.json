@@ -21,12 +21,12 @@
     "docs:assets": "cp node_modules/prismjs/themes/prism-okaidia.css docs/",
     "docs:serve": "es-dev-server --root-dir=docs --node-resolve --watch",
     "analyze": "wca analyze \"dev/src/**/*.ts\" --outFile custom-elements.json",
-    "serve": "tsc && concurrently \"npm run lunaApi\" \"npm run lunaServer\"",
     "test": "karma start karma.conf.cjs",
     "test:watch": "karma start karma.conf.cjs --auto-watch=true --single-run=false",
     "test:update-snapshots": "karma start karma.conf.cjs --update-snapshots",
     "test:prune-snapshots": "karma start karma.conf.cjs --prune-snapshots",
     "checksize": "rollup -c ; cat luna.bundled.js | gzip -9 | wc -c ; rm luna.bundled.js",
+    "serve": "concurrently \"npm run lunaApi\" \"npm run lunaServer\" ts",
     "lunaServer": "es-dev-server --node-resolve --watch",
     "lunaApi": "ts-node ../api.consumet.org/src/main.ts"
   },
@@ -55,7 +55,7 @@
     "chai": "^4.2.0",
     "concurrently": "^8.2.2",
     "deepmerge": "^4.2.2",
-    "es-dev-server": "^1.46.1",
+    "es-dev-server": "^1.60.2",
     "eslint": "^6.8.0",
     "karma": "^4.4.1",
     "karma-chai": "^0.1.0",
@@ -68,7 +68,6 @@
     "rollup-plugin-filesize": "^7.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-terser": "^5.3.0",
-    "ts-node": "^10.9.1",
     "typescript": "^5.4.0",
     "web-component-analyzer": "^1.0.3"
   }

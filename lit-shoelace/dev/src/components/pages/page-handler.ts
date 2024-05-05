@@ -24,7 +24,7 @@ export class PageHandler extends LunaBasePage {
 
   render() {
     var activePageHtml = html`<luna-home></luna-home>`
-    const activePage = this.getContext("activePage")
+    const activePage = this.getContext("activePage") 
     switch (activePage?.toLowerCase()){
       case "home":
         activePageHtml = html`<luna-home></luna-home>`
@@ -38,22 +38,22 @@ export class PageHandler extends LunaBasePage {
     }
     return html`
       <sl-resize-observer>
-<div class="container flex flex-col md:flex-row">
-    <!-- Topbar -->
-    <div class="top-bar md:order-2 md:w-full">
-        <topbar-items class="top-bar"></topbar-items>
-    </div>
+        <div class="container flex flex-col md:flex-row">
+            <!-- Topbar -->
+            <div class="top-bar md:order-2 md:w-full">
+                <topbar-items class="top-bar"></topbar-items>
+            </div>
 
-    <!-- Main Content -->
-    <div class="content md:order-3 md:w-full">
-        ${activePageHtml}
-    </div>
+            <!-- Main Content -->
+            <div class="content md:order-3 md:w-full">
+                ${activePageHtml}
+            </div>
+            <!-- Sidebar -->
+            <div class="side-bar md:order-1 md:w-full">
+                <sidebar-items class="side-bar"></sidebar-items>
+            </div>
 
-    <!-- Sidebar -->
-    <div class="side-bar md:order-1 md:w-full">
-        <sidebar-items class="side-bar"></sidebar-items>
-    </div>
-</div>
+        </div>
 
       </sl-resize-observer>
     `;
