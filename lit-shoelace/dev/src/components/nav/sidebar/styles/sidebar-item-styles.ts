@@ -14,6 +14,11 @@ export const Styles = css`
 }
 
 .sidebar-item {
-    padding: 10px 0px 0px 0px
+    display: flex;
+    flex-direction: row;
+}
+
+p{
+    padding: 0px
 }
 `;

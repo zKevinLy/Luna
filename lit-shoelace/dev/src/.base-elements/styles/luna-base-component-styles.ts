@@ -7,5 +7,6 @@ export const BaseStyles = css`
 p {
     padding:0px;
     margin:0px;
+    font-size:1em;
 }
 `;

@@ -1,8 +1,8 @@
 import { html } from 'lit';
-import { Styles } from './styles/home-styles';
-import { BaseStyles } from '../../.base-elements/styles/luna-base-page-styles';
-import { LunaBasePage } from '../../.base-elements/luna-base-page';
-import { GridStyles } from './styles/page-grid-styles';
+import { Styles } from '../styles/page-styles';
+import { BaseStyles } from '../../../.base-elements/styles/luna-base-page-styles';
+import { LunaBasePage } from '../../../.base-elements/luna-base-page';
+import { GridStyles } from '../styles/page-grid-styles';
 
 export class LunaPageHome extends LunaBasePage {
     static properties = {

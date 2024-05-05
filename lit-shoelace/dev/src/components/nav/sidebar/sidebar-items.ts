@@ -22,12 +22,9 @@ export class SidebarItems extends LunaBaseComponent {
     return html`
       <div class="sidebar-items">
         <sidebar-item ItemName="Home" SLIcon="house" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
-        <sidebar-item ItemName="Anime" SLIcon="film" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
-        <sidebar-item ItemName="Manga" SLIcon="book-half" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
-        <sidebar-item ItemName="Novel" SLIcon="book" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
-        <sidebar-item ItemName="KDrama" SLIcon="suit-heart" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
-        <sidebar-item ItemName="Movies" SLIcon="camera-reels-fill" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
-        <sidebar-item ItemName="TV" SLIcon="tv-fill" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
+        <sidebar-item ItemName="Favorites" SLIcon="heart" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
+        <sidebar-item ItemName="Browse" SLIcon="search" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
+        <sidebar-item ItemName="History" SLIcon="clock-history" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
         <sidebar-item ItemName="More" SLIcon="three-dots" @click="${(e) => this.PageSelection(e)}"></sidebar-item>
       </div>
     `

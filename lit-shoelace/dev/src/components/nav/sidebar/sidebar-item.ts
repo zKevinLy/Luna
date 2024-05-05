@@ -22,9 +22,9 @@ export class SidebarItem extends LunaBaseComponent {
 
   render() {
     return html`
-      <sl-button class="sidebar-item ${this.ItemName}">
+      <sl-button class="sidebar-item ${this.ItemName}" size="small">
         <sl-icon name=${this.SLIcon}></sl-icon> 
-        ${this.ItemName}
+        <p>${this.ItemName}</p>
       </sl-button>
     `
   }

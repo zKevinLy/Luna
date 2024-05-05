@@ -4,7 +4,7 @@ export const Styles = css`
 .sidebar-items{
     display: flex;
     flex-direction: row;
-    align-content: space-around;
+    justify-content: space-evenly;
     height:100%;
     width:100%;
     overflow-y: auto; 
@@ -14,6 +14,7 @@ export const Styles = css`
     .sidebar-items {
         flex-direction: column; /* For medium and larger screens */
         overflow-y: visible; /* Reset scrolling for larger screens */
+        justify-content: flex-start;
     }
 }
 

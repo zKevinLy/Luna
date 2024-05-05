@@ -6,12 +6,23 @@ export const Styles = css`
     width: 100vw;
 }
 
+.content {
+    height: 100%;
+    width: 100%;
+    background:black;
+    color:white;
+    font-family: var(--sl-input-font-family);
+}
+
 .side-bar {
     background: #1e1e1e;
 }
 
 .top-bar {
-    background: #1e1e1e;
+    background: #1e1e1e;    
+    display: flex;
+    justify-content: flex-end;
+
 }
 
 .container {

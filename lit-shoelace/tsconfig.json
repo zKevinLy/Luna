@@ -27,6 +27,6 @@
       }
     ]
   },
-  "include": ["dev/src/**/*.ts", "dev/src/bases/luna-base-element.ts", "dev/src/bases/styles/luna-base-element-styles.ts", "dev/src/components/pages/styles/home-styles.ts"],
+  "include": ["dev/src/**/*.ts", "dev/src/bases/luna-base-element.ts", "dev/src/bases/styles/luna-base-element-styles.ts", "dev/src/components/pages/styles/page-styles.ts", "dev/src/resources/ApiClient.ts"],
   "exclude": []
 }
