@@ -8,4 +8,11 @@ export const Styles = css`
     grid-template-columns: repeat(9, 1fr); 
     grid-template-rows: repeat(9, 1fr);
 }
+
+.nav-bar {
+    background: #1e1e1e;
+    display: flex
+    flex-direction: column;
+    align-content: flex-start;
+}
 `;

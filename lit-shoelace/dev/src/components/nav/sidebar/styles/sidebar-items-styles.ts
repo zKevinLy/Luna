@@ -1,10 +1,11 @@
 import { css } from 'lit';
 
 export const Styles = css`
-.nav-bar{
+.sidebar-items{
     display: flex;
     flex-direction: column;
-    height:100%
+    align-content: space-around;
+    height:100%;
     width:100%;
 }
 `;

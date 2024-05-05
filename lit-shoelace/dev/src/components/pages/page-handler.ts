@@ -5,7 +5,8 @@ import { GridStyles } from './styles/page-grid-styles';
 
 export * from './home';
 export * from './anime';
-export * from '../nav/nav-bar';
+export * from '../nav/sidebar/sidebar-items';
+export * from '../nav/topbar/topbar-items';
 
 export class PageHandler extends LunaBasePage {
   static properties = {
@@ -18,12 +19,12 @@ export class PageHandler extends LunaBasePage {
 
   async connectedCallback() {
     super.connectedCallback()
+    this.addEventListener("context-updated", () => this.requestUpdate())
   }
 
   render() {
     var activePageHtml = html`<luna-home></luna-home>`
     const activePage = this.getContext("activePage")
-    console.log("current Active", activePage?.context)
     switch (activePage?.toLowerCase()){
       case "home":
         activePageHtml = html`<luna-home></luna-home>`
@@ -37,7 +38,8 @@ export class PageHandler extends LunaBasePage {
     }
     return html`
       <div class="container">
-        <nav-bar class="row-start-1 row-span-9 col-start-1 col-span-1"></nav-bar>
+        <sidebar-items class="nav-bar row-start-1 row-span-9 col-start-1 col-span-1"></sidebar-items>
+        <topbar-items class="nav-bar row-start-1 row-span-1 col-start-2 col-span-9"></topbar-items>
         ${activePageHtml}
       </div>
 

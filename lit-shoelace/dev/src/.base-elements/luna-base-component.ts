@@ -8,29 +8,25 @@ export class LunaBaseComponent extends LitElement {
     super();
   }
 
-  context = {
-    activePage:""
-  }
-
   connectedCallback() {
     super.connectedCallback();
-    this.addEventListener("context-updated", () => this.requestUpdate())
   }
   
   setContext(property, value){
-    console.log(property, value)
     localStorage.setItem(property, value);
     this.triggerRender()
   }
 
   getContext(property){
-    console.log(localStorage.getItem(property))
-    return (localStorage.getItem(property) as any);
+    return (localStorage.getItem(property));
   }
 
   triggerRender(){
     this.dispatchEvent(new CustomEvent('context-updated', { 
+      bubbles:true,
+      composed:true,
     }));
+    this.requestUpdate();
   }
 }
 

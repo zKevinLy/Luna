@@ -1,7 +1,7 @@
 import { css } from 'lit';
 
 export const BaseStyles = css`
-.nav-item::part(base) { 
+.sidebar-item::part(base) { 
 }
 
 p {
