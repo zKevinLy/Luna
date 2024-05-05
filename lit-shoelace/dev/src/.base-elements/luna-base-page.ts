@@ -1,16 +1,18 @@
-import { LitElement } from 'lit';
 import { BaseStyles } from './styles/luna-base-page-styles';
+import { LunaBaseComponent } from './luna-base-component';
 
-export class LunaBasePage extends LitElement {
-  static styles = [BaseStyles];
-
+export class LunaBasePage extends LunaBaseComponent {
   static properties = {
-    PageName: {type: String , state:true},
+    PageName: { type: String },
   };
-
-  PageName = ""; 
-
   constructor() {
     super();
   }
+  connectedCallback() {
+    super.connectedCallback();
+  }
+  PageName = "home"; 
 }
+
+LunaBasePage.styles = [BaseStyles];
+

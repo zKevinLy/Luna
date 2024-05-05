@@ -1,5 +1,11 @@
 import { css } from 'lit';
 
 export const BaseStyles = css`
-  p { color: blue; }
+.nav-item::part(base) { 
+}
+
+p {
+    padding:0px;
+    margin:0px;
+}
 `;
