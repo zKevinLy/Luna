@@ -10,9 +10,9 @@ export class TopbarItem extends LunaBaseComponent {
     SLIcon: {type: String },
   };
 
-  ItemToolTip = "default-description";
-  ItemName = "default-name";
-  SLIcon = "hourglass-bottom";
+  ItemToolTip;
+  ItemName;
+  SLIcon;
 
   constructor() {
     super();
@@ -23,12 +23,22 @@ export class TopbarItem extends LunaBaseComponent {
   }
 
   render() {
+    var topBarHtml = html``
+    // If there's a tooltip, it's a button, if not it's a title
+    if (this.ItemToolTip === null || this.ItemToolTip === undefined){
+      topBarHtml = html`<p>${this.ItemName}<p>`
+    } else {
+      topBarHtml = html`
+        <sl-tooltip content="${this.ItemToolTip}">
+          <sl-button class="topbar-item ${this.ItemName}" size = "large">
+            <sl-icon name=${this.SLIcon}></sl-icon>
+          </sl-button>
+        </sl-tooltip>
+      `
+    }
+
     return html`
-    <sl-tooltip content="${this.ItemToolTip}">
-      <sl-button class="topbar-item ${this.ItemName}">
-        <sl-icon name=${this.SLIcon}></sl-icon> 
-      </sl-button>
-    </sl-tooltip>
+      ${topBarHtml}
     `
   }
 

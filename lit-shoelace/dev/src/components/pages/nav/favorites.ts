@@ -3,6 +3,7 @@ import { Styles } from '../styles/page-styles';
 import { BaseStyles } from '../../../.base-elements/styles/luna-base-page-styles';
 import { LunaBasePage } from '../../../.base-elements/luna-base-page';
 import { GridStyles } from '../styles/page-grid-styles';
+import { LunaCards } from '../../cards/cards';
 
 export class LunaPageFavorites extends LunaBasePage {
     static properties = {
@@ -17,7 +18,10 @@ export class LunaPageFavorites extends LunaBasePage {
         super.connectedCallback()
     }
     render() {
-        return html`<p>Favorites</p>`
+        return html`
+        <topbar-items PageName="${this.PageName}" class="top-bar"></topbar-items>
+        <luna-cards></luna-cards>
+        `
     }
 }
 LunaPageFavorites.styles = [BaseStyles, Styles, GridStyles];

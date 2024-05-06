@@ -11,9 +11,14 @@ export const Styles = css`
     border-color: rgba(30, 30, 30, 0); /* Transparent*/;
     color:white;
     border-radius:25px;
+    
 }
 
-.topbar-item {
-    padding: 10px 0px 0px 0px
+p {
+    padding: 10px 0px 0px 10px;
+    margin:0px;
+    font-size:1.5em;
+    color:gray;
+    font-family: var(--sl-input-font-family);
 }
 `;

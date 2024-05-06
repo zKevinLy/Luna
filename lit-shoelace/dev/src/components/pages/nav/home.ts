@@ -17,7 +17,10 @@ export class LunaPageHome extends LunaBasePage {
         super.connectedCallback()
     }
     render() {
-        return html`<p>Home Details</p>`
+        return html`
+        <topbar-items PageName="${this.PageName}" class="top-bar"></topbar-items>
+        
+        `
     }
 }
 LunaPageHome.styles = [BaseStyles, Styles, GridStyles];

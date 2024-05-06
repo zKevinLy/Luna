@@ -9,7 +9,7 @@ export class LunaBaseProvider extends APIClient {
   ProviderBaseUrl;
 
   constructor() {
-    super("https://example.com");
+    super("http://localhost:3000");
   }
 
 }

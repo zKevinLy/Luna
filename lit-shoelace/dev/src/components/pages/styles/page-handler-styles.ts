@@ -18,12 +18,6 @@ export const Styles = css`
     background: #1e1e1e;
 }
 
-.top-bar {
-    background: #1e1e1e;    
-    display: flex;
-    justify-content: flex-end;
-
-}
 
 .container {
     display: flex;

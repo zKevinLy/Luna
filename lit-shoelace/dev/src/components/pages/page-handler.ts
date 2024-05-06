@@ -54,9 +54,6 @@ export class PageHandler extends LunaBasePage {
       <div class="container flex flex-col md:flex-row">
           <!-- Main Content -->
           <div class="content">
-            <div class="top-bar">
-                <topbar-items class="top-bar"></topbar-items>
-            </div>
             ${activePageHtml}
           </div>
           <!-- Sidebar -->
