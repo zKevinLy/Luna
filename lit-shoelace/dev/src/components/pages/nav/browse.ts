@@ -17,7 +17,9 @@ export class LunaPageBrowse extends LunaBasePage {
         super.connectedCallback()
     }
     render() {
-        return html`<p>Browse</p>`
+        return html`
+        <topbar-items PageName="${this.PageName}" class="top-bar"></topbar-items>
+        `
     }
 }
 LunaPageBrowse.styles = [BaseStyles, Styles, GridStyles];

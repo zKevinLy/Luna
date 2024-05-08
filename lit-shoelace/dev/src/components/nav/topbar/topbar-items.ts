@@ -6,8 +6,9 @@ import { TopbarItem } from './topbar-item';
 
 export class TopbarItems extends LunaBaseComponent {
   static properties = {
+    PageName: {type: String},
   };
-
+  PageName
   constructor() {
     super();
   }
@@ -15,14 +16,16 @@ export class TopbarItems extends LunaBaseComponent {
   async connectedCallback() {
     super.connectedCallback()
     this.addEventListener("context-updated", () => this.requestUpdate())
-
   }
 
   render() {
     return html`
-      <div class="topbar-items">      
-        <topbar-item ItemToolTip="Search" ItemName="Search" SLIcon="search" @click="${(e) => this.FilterSelection(e)}"></topbar-item>
-        <topbar-item ItemToolTip="Filter" ItemName="Filter" SLIcon="filter" @click="${(e) => this.FilterSelection(e)}"></topbar-item>
+      <div class="topbar-items" ItemName=""> 
+        <topbar-item ItemName="${this.PageName}"></topbar-item>
+        <div class="options">
+          <topbar-item ItemToolTip="Search" ItemName="Search" SLIcon="search" @click="${(e) => this.FilterSelection(e)}"></topbar-item>
+          <topbar-item ItemToolTip="Filter" ItemName="Filter" SLIcon="filter" @click="${(e) => this.FilterSelection(e)}"></topbar-item>
+        </div>
       </div>
     `
   }

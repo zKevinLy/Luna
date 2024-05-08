@@ -17,7 +17,9 @@ export class LunaPageHistory extends LunaBasePage {
         super.connectedCallback()
     }
     render() {
-        return html`<p>History</p>`
+        return html`
+            <topbar-items PageName="${this.PageName}" class="top-bar"></topbar-items>
+        `
     }
 }
 LunaPageHistory.styles = [BaseStyles, Styles, GridStyles];
