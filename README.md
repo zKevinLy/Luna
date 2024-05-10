@@ -25,7 +25,7 @@ THE IDEA:
 * Providers:
     * Each source will have it's own Provider that extends a base Provider class that has the Name of the provider, the content it's providing, and any other suitable properties for a base class. 
     * The Providers will essentially be the class responsible for interacting with the individual sites/ endpoints responsible for "providing" the content we need, such as the number of episodes in a season of a show, or chapters of a book
-    * Currently looking at https://github.com/consumet/consumet.ts for the main source of Content description (this doesn't provide the actual video for an anime, just descriptions and cover images)
+    * Currently looking at https://github.com/consumet/api.consumet.org for the main source of Content description (this doesn't provide the actual video for an anime, just descriptions and cover images)
     * For actual retrieval of the video for a particular site, we'll need to develop a sort of "scraper" that looks at a particular URL and determines the base video URL and retrieve only that video.
 TODO:
 Find a suitable language to support all platforms
