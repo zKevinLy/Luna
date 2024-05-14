@@ -32,53 +32,68 @@ class MainLayoutState extends State<MainLayout> {
       builder: (context, constraints) {
         if (constraints.maxWidth < 600) {
           // Mobile view
-          return Scaffold(
-            body: widget.pages[_selectedPageKey] ?? Container(),
-            bottomNavigationBar: BottomNavigationBar(
-              backgroundColor: Colors.grey[900], // Set a dark background color
-              currentIndex: widget.pages.keys.toList().indexOf(_selectedPageKey),
-              onTap: (int index) {
-                setState(() {
-                  _selectedPageKey = widget.pages.keys.toList()[index];
-                });
-              },
-              items: widget.pages.keys.map((key) {
-                return BottomNavigationBarItem(
-                  icon: Icon(iconMap[key.toLowerCase()] ?? Icons.error),
-                  label: key,
-                );
-              }).toList(),
-            ),
-          );
+          return _buildMobileView();
         } else {
           // Desktop view
-          return Scaffold(
-            body: Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: widget.pages.keys.toList().indexOf(_selectedPageKey),
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _selectedPageKey = widget.pages.keys.toList()[index];
-                    });
-                  },
-                  // Nav Buttons
-                  labelType: NavigationRailLabelType.all,
-                  destinations: widget.pages.keys.map((key) {
-                    return NavigationRailDestination(
-                      icon: Icon(iconMap[key.toLowerCase()] ?? Icons.error),
-                      label: Text(key.split(' ').map((word) => word.substring(0, 1).toUpperCase() + word.substring(1)).join(' ')),
-                    );
-                  }).toList(),
-                ),
-                const VerticalDivider(thickness: 1, width: 1),
-                // Display selected page based on key
-                Expanded(child: widget.pages[_selectedPageKey] ?? Container()), // Use ?? Container() for safety
-              ],
-            ),
-          );
+          return _buildDesktopView();
         }
       },
     );
   }
+
+  Widget _buildMobileView() {
+    return Scaffold(
+      body: widget.pages[_selectedPageKey] ?? Container(),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+        currentIndex: widget.pages.keys.toList().indexOf(_selectedPageKey),
+        onTap: (int index) {
+          setState(() {
+            _selectedPageKey = widget.pages.keys.toList()[index];
+          });
+        },
+        items: widget.pages.keys.map((key) {
+          return BottomNavigationBarItem(
+            icon: Icon(
+              iconMap[key.toLowerCase()] ?? Icons.error,
+              color: Theme.of(context).iconTheme.color,
+            ),
+            label: key,
+          );
+        }).toList(),
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      ),
+    );
+  }
+
+  Widget _buildDesktopView() {
+    return Scaffold(
+      body: Row(
+        children: [
+          NavigationRail(
+            selectedIndex: widget.pages.keys.toList().indexOf(_selectedPageKey),
+            onDestinationSelected: (int index) {
+              setState(() {
+                _selectedPageKey = widget.pages.keys.toList()[index];
+              });
+            },
+            // Nav Buttons
+            labelType: NavigationRailLabelType.all,
+            destinations: widget.pages.keys.map((key) {
+              return NavigationRailDestination(
+                icon: Icon(iconMap[key.toLowerCase()] ?? Icons.error),
+                label: Text(key.split(' ').map((word) => word.substring(0, 1).toUpperCase() + word.substring(1)).join(' ')),
+              );
+            }).toList(),
+          ),
+          const VerticalDivider(thickness: 1, width: 1),
+          // Display selected page based on key
+          Expanded(child: widget.pages[_selectedPageKey] ?? Container()), // Use ?? Container() for safety
+        ],
+      ),
+    );
+  }
+
 }
