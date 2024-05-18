@@ -2,11 +2,13 @@ class ContentData {
   final int number;
   final String title;
   final DateTime lastUpdated;
+  final String contentURL;
 
   ContentData({
     required this.number,
     required this.title,
     required this.lastUpdated,
+    required this.contentURL,
   });
 }
 
@@ -17,7 +19,7 @@ class ContentInfo {
   final List<String> summary;
   final List<String> genre;
   final List<ContentData> contentList;
-  final String websiteUrl;
+  final String websiteURI;
 
 
   final String contentType;
@@ -30,7 +32,7 @@ class ContentInfo {
     required this.summary,
     required this.genre,
     required this.contentList,
-    required this.websiteUrl,
+    required this.websiteURI,
 
 
     required this.contentType,

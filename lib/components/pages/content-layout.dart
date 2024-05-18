@@ -12,7 +12,7 @@ class ContentLayout extends StatefulWidget {
 }
 
 class _ContentLayoutState extends State<ContentLayout> {
-  int? _selectedContentNumber; 
+  String? _selectedContentURI; 
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +95,7 @@ class _ContentLayoutState extends State<ContentLayout> {
             (chapter) => ListTile(
               onTap: () {
                 setState(() {
-                  _selectedContentNumber = chapter.number;
+                  _selectedContentURI = chapter.contentURL;
                 });
               },
               title: Text(
@@ -114,11 +114,11 @@ class _ContentLayoutState extends State<ContentLayout> {
 
 
   Widget _buildContent() {
-    if (_selectedContentNumber == null) {
+    if (_selectedContentURI == null) {
       return Container(); // Initially no content to show
     }
     return FutureBuilder(
-      future: _fetchContentInfo(_selectedContentNumber!),
+      future: _fetchContentInfo(_selectedContentURI!),
       builder: (BuildContext context, AsyncSnapshot<List<String>> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator(); // Or any other loading indicator
@@ -133,12 +133,12 @@ class _ContentLayoutState extends State<ContentLayout> {
     );
   }
 
-  Future<List<String>> _fetchContentInfo(int chapterNo) async {
+  Future<List<String>> _fetchContentInfo(String contentURI) async {
     List<String> contentInfo;
     switch(widget.cardItem.contentType){
       case "novel":
         final lightNovelPub = LightNovelPub();
-        contentInfo = await lightNovelPub.fetchContentItem(widget.cardItem.title,chapterNo); 
+        contentInfo = await lightNovelPub.fetchContentItem(contentURI); 
         break;
       default:
         contentInfo = [];

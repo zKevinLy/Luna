@@ -22,7 +22,7 @@ class FavoritesPage extends LunaBasePage {
   @override
   Widget buildBody(BuildContext context) {
     return FutureBuilder<ContentInfo>(
-      future: fetchContentInfo("the-beginning-after-the-end"),
+      future: fetchContentInfo("cultivation-online"),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(

@@ -38,7 +38,7 @@ class LightNovelPub {
       final summary = results[2] as List<String>;
       final genre = results[3] as List<String>;
       final contentList = results[4] as List<ContentData>;
-      final websiteUrl = pageURI;
+      final websiteURI = pageURI;
 
       return ContentInfo(
         imageUrl: imageUrl,
@@ -47,7 +47,7 @@ class LightNovelPub {
         summary: summary,
         genre: genre,
         contentList: contentList,
-        websiteUrl: websiteUrl,
+        websiteURI: websiteURI,
         contentType: "novel",
         contentSource: "light-novel-pub", 
       );
@@ -59,16 +59,16 @@ class LightNovelPub {
         summary: ['Error: $e'],
         genre: [],
         contentList: [],
-        websiteUrl: '',
+        websiteURI: '',
         contentType: "novel",
         contentSource: "",
       );
     }
   }
 
-  Future<List<String>> fetchContentItem(String title, int chapterNumber) async {
+  Future<List<String>> fetchContentItem(String contentURI) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/novel/$title/chapter-$chapterNumber'));
+      final response = await http.get(Uri.parse(contentURI));
       
       if (response.statusCode != 200) {
         return ['Error: Unable to fetch chapter. Status code: ${response.statusCode}'];
@@ -133,14 +133,21 @@ class LightNovelPub {
     try {
       var contentElement = document.querySelector('[class^="chapter-list"]');
       if (contentElement != null) {
-        List<Element> paragraphElements = contentElement.getElementsByTagName('li');
+        List<Element> paragraphElements = contentElement.getElementsByTagName('a');
         for (int i = 0; i < paragraphElements.length; i++) {
           Element paraElement = paragraphElements[i];
+          final partialURI = paraElement.attributes['href'] as String;
+
           final chapterNo = paraElement.querySelector('[class^="chapter-no"]')?.text.trim() as String;
           final chapterTitle = paraElement.querySelector('[class^="chapter-title"]')?.text.trim() as String;
           final lastUpdated = paraElement.querySelector('[class^="chapter-update"]');
           final lastUpdatedDatetime = lastUpdated?.attributes['datetime'] as String;
-          contentList.add(ContentData(number: int.parse(chapterNo), title: 'Chapter $chapterNo: $chapterTitle', lastUpdated: DateTime.parse(lastUpdatedDatetime.trim())));
+          contentList.add(ContentData(
+                number: int.parse(chapterNo), 
+                title: 'Chapter $chapterNo: $chapterTitle', 
+                lastUpdated: DateTime.parse(lastUpdatedDatetime.trim()),
+                contentURL: "$baseUrl$partialURI"
+          ));
         }
       }
     } catch (e) {
