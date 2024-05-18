@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class MainLayout extends StatefulWidget {
-  final Map<String, Widget> pages;
+  final Map<String, Map<String, dynamic>> pages; // Modified to accept Map<String, Map<String, dynamic>>
 
   const MainLayout({Key? key, required this.pages}) : super(key: key);
 
@@ -17,14 +17,6 @@ class MainLayoutState extends State<MainLayout> {
     super.initState();
     _selectedPageKey = widget.pages.keys.first; // Set initial page
   }
-
-  final Map<String, IconData> iconMap = {
-    'home': Icons.home,
-    'favorites': Icons.favorite,
-    'browse': Icons.search,
-    'history': Icons.history,
-    'settings': Icons.settings,
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +35,7 @@ class MainLayoutState extends State<MainLayout> {
 
   Widget _buildMobileView() {
     return Scaffold(
-      body: widget.pages[_selectedPageKey] ?? Container(),
+      body: widget.pages[_selectedPageKey]?['page'] ?? Container(), // Updated to access the 'page' key
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
@@ -56,10 +48,10 @@ class MainLayoutState extends State<MainLayout> {
         items: widget.pages.keys.map((key) {
           return BottomNavigationBarItem(
             icon: Icon(
-              iconMap[key.toLowerCase()] ?? Icons.error,
+              widget.pages[key]?['icon'] ?? Icons.error, // Updated to access the 'icon' key
               color: Theme.of(context).iconTheme.color,
             ),
-            label: key,
+            label: key.split(' ').map((word) => word.substring(0, 1).toUpperCase() + word.substring(1)).join(' '),
           );
         }).toList(),
         selectedItemColor: Theme.of(context).colorScheme.primary,
@@ -83,17 +75,16 @@ class MainLayoutState extends State<MainLayout> {
             labelType: NavigationRailLabelType.all,
             destinations: widget.pages.keys.map((key) {
               return NavigationRailDestination(
-                icon: Icon(iconMap[key.toLowerCase()] ?? Icons.error),
+                icon: Icon(widget.pages[key]?['icon'] ?? Icons.error),
                 label: Text(key.split(' ').map((word) => word.substring(0, 1).toUpperCase() + word.substring(1)).join(' ')),
               );
             }).toList(),
           ),
           const VerticalDivider(thickness: 1, width: 1),
           // Display selected page based on key
-          Expanded(child: widget.pages[_selectedPageKey] ?? Container()), // Use ?? Container() for safety
+          Expanded(child: widget.pages[_selectedPageKey]?['page'] ?? Container()), 
         ],
       ),
     );
   }
-
 }

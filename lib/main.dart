@@ -1,5 +1,6 @@
+
 import 'package:flutter/material.dart';
-import 'package:luna/components/pages/main_layout.dart';
+import 'package:luna/components/pages/main-layout.dart';
 import 'package:luna/components/pages/main-pages/home.dart';
 import 'package:luna/components/pages/main-pages/favorites.dart';
 import 'package:luna/components/pages/main-pages/history.dart';
@@ -18,11 +19,11 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData.dark(),
       home: MainLayout(
         pages: {
-          'home': HomePage(),
-          'favorites': FavoritesPage(),
-          'browse': BrowsePage(),
-          'history': HistoryPage(),
-          'settings': SettingsPage(),
+          'home':       {'page': HomePage(),      'icon': Icons.home}, 
+          'favorites':  {'page': FavoritesPage(), 'icon': Icons.favorite}, 
+          'browse':     {'page': BrowsePage(),    'icon': Icons.search}, 
+          'history':    {'page': HistoryPage(),   'icon': Icons.history}, 
+          'settings':   {'page': SettingsPage(),  'icon': Icons.settings}, 
         },
       ),
     );
