@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:luna/models/content-info.dart';
-import 'package:luna/components/pages/content-layout.dart';
+import 'package:luna/models/content_info.dart';
+import 'package:luna/components/pages/content_layout.dart';
 
 class CardLayout extends StatelessWidget {
-  final List<ContentInfo> cardItems;
+  final List<ContentPreview> cardItems;
 
   const CardLayout({required this.cardItems});
 
@@ -81,7 +81,7 @@ class CardLayout extends StatelessWidget {
 
   Widget _buildCardImage(int index) {
     return Image.network(
-      cardItems[index].imageUrl,
+      cardItems[index].imageURI,
       fit: BoxFit.cover,
       width: double.infinity,
     );

@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:luna/components/pages/main-layout.dart';
+import 'package:luna/components/pages/main_layout.dart';
 import 'package:luna/components/pages/main-pages/home.dart';
 import 'package:luna/components/pages/main-pages/favorites.dart';
 import 'package:luna/components/pages/main-pages/history.dart';

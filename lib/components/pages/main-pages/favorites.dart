@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:luna/bases/luna_base_page.dart';
-import 'package:luna/components/pages/card-layout.dart';
-import 'package:luna/models/content-info.dart';
-import 'package:luna/content-type/novels/light-novel-pub.dart';
+import 'package:luna/components/pages/card_layout.dart';
+import 'package:luna/models/content_info.dart';
+import 'package:luna/content-type/novels/light_novel_pub.dart';
 
 class FavoritesPage extends LunaBasePage {
   FavoritesPage({Key? key}) : super(key: key, title: 'Favorites Page');
@@ -21,8 +21,8 @@ class FavoritesPage extends LunaBasePage {
 
   @override
   Widget buildBody(BuildContext context) {
-    return FutureBuilder<ContentInfo>(
-      future: fetchContentInfo("cultivation-online"),
+    return FutureBuilder<List<ContentPreview>>(
+      future: fetchBrowseList([1, 2, 3]), // Fetch content list for given page numbers
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -33,16 +33,16 @@ class FavoritesPage extends LunaBasePage {
             child: Text('Error: ${snapshot.error}'), // Show error message if fetching fails
           );
         } else {
-          final List<ContentInfo> cardItems = [snapshot.data!];
+          final List<ContentPreview> cardItems = snapshot.data ?? []; // Get the fetched list
           return CardLayout(cardItems: cardItems); // Build CardLayout with fetched content
         }
       },
     );
   }
 
-  Future<ContentInfo> fetchContentInfo(String title) async {
+  Future<List<ContentPreview>> fetchBrowseList(List<int> pageNumbers) async {
     final lightNovelPub = LightNovelPub();
-    final contentInfo = await lightNovelPub.fetchContentInfo(title);
-    return contentInfo;
+    final contentList = await lightNovelPub.fetchBrowseList(pageNumbers);
+    return contentList;
   }
 }

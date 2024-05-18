@@ -1,28 +1,30 @@
+import 'dart:ffi';
+
 import 'package:synchronized/synchronized.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
-import 'package:luna/models/content-info.dart';
+import 'package:luna/models/content_info.dart';
 import 'package:flutter/foundation.dart';
 
 class LightNovelPub {
-  final String baseUrl = "https://www.lightnovelpub.com";
+  final String contentType = "novel";
+  final String contentSource = "light-novel-pub";
 
-  Future<ContentInfo> fetchContentInfo(String title) async {
+  final String baseURI = "https://www.lightnovelpub.com";
+  final String browseURI = "/browse/genre-all-25060123";
+
+  Future<ContentInfo> fetchContentDetails(ContentPreview cardItem) async {
     try {
-      var pageURI = '$baseUrl/novel/$title';
-      final response = await http.get(Uri.parse(pageURI));
+      final response = await http.get(Uri.parse(cardItem.contentURI));
       final document = parse(response.body);
-      final List<Element> novelContent = document.getElementsByTagName('article');
-      if (novelContent.isNotEmpty) {
-        pageURI = novelContent[0].attributes['itemid'] as String;
-      }
+
       // Fetch details concurrently using compute for parallel processing
       final imageUrlFuture = compute(_fetchContentImageUrl, document);
       final authorFuture = compute(_fetchAuthor, document);
       final summaryFuture = compute(_fetchSummary, document);
       final genreFuture = compute(_fetchGenre, document);
-      final contentListFuture = fetchContentList(document, pageURI, title);
+      final contentListFuture = fetchContentList(document, cardItem.contentURI);
 
       // Wait for all futures to complete
       final results = await Future.wait([
@@ -38,11 +40,11 @@ class LightNovelPub {
       final summary = results[2] as List<String>;
       final genre = results[3] as List<String>;
       final contentList = results[4] as List<ContentData>;
-      final websiteURI = pageURI;
+      final websiteURI = cardItem.contentURI;
 
       return ContentInfo(
-        imageUrl: imageUrl,
-        title: title,
+        imageURI: imageUrl,
+        title: cardItem.title,
         author: author,
         summary: summary,
         genre: genre,
@@ -53,8 +55,8 @@ class LightNovelPub {
       );
     } catch (e) {
       return ContentInfo(
-        imageUrl: 'https://via.placeholder.com/150',
-        title: title,
+        imageURI: 'https://via.placeholder.com/150',
+        title: cardItem.title,
         author: '',
         summary: ['Error: $e'],
         genre: [],
@@ -75,13 +77,13 @@ class LightNovelPub {
       }
       
       final document = parse(response.body);
-      final contentElement = document.querySelector('[class^="chapter-content"]');
+      final contentElementContainer = document.querySelector('[class^="chapter-content"]');
       
-      if (contentElement == null) {
+      if (contentElementContainer == null) {
         return ['Chapter content not found'];
       }
 
-      return contentElement
+      return contentElementContainer
           .getElementsByTagName('p')
           .map((element) => element.text.trim())
           .toList();
@@ -90,10 +92,78 @@ class LightNovelPub {
     }
   }
 
-  Future<List<ContentData>> fetchContentList(Document document, String pageURI,String title) async {
+  Future<List<ContentPreview>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'new', String status = 'all'}) async {
+    try {
+      Map<int, List<ContentPreview>> contentMap = {};
+      var pageFutures = <Future>[];
+
+      for (var pageNumber in pageNumbers) {
+        pageFutures.add(() async {
+          var pageResponse = await http.get(Uri.parse('$baseURI$browseURI/order-$orderBy/status-$status?page=$pageNumber'));
+          var pageDocument = parse(pageResponse.body);
+
+          var pageContent = <ContentPreview>[];
+          _fetchPageContentBrowse(pageDocument, pageContent);
+          
+          contentMap[pageNumber] = pageContent;
+        }());
+      }
+
+      await Future.wait(pageFutures);
+
+      // Flatten the contentMap into a list, sorted by the key
+      List<ContentPreview> contentList = [];
+      var sortedKeys = contentMap.keys.toList()..sort();
+      for (var key in sortedKeys) {
+        contentList.addAll(contentMap[key]!);
+      }
+
+      return contentList;
+    } catch (e) {
+      return [];
+    }
+  }
+
+
+
+  Future<void> _fetchPageContentBrowse(Document document, List<ContentPreview> contentList) async {
+    try {
+      var contentElementContainer = document.querySelector('[class^="novel-list"]');
+      if (contentElementContainer == null) {
+      return;
+      }
+      List<Element> coverWraps = contentElementContainer.querySelectorAll('[class^="cover-wrap"]');
+      for (int i = 0; i < coverWraps.length; i++) {
+        Element contentElement = coverWraps[i];
+        List<Element> novelItem = contentElement.getElementsByTagName('a');
+        if(novelItem.isEmpty){
+          continue;
+        }
+        var contentCover = novelItem[0];
+        final partialURI = contentCover.attributes['href'] as String;
+        final title = contentCover.attributes['title'] as String;
+        List<Element> contentImage = contentCover.getElementsByTagName('img');
+        var imageURI = "https://via.placeholder.com/150";
+        if(contentImage.isNotEmpty){
+          imageURI = contentImage[0].attributes['data-src'] as String;
+        }
+        contentList.add(ContentPreview(
+              title: title, 
+              contentURI: "$baseURI$partialURI",
+              imageURI: imageURI,
+              contentType: contentType,
+              contentSource: contentSource,
+        ));
+      }
+    } catch (e) {
+      return;
+    }
+  }
+
+  Future<List<ContentData>> fetchContentList(Document document, String pageURI) async {
     try {
       const pagination = 100;
-      var totalChapters = -1;
+      double totalChapters = -1;
 
       List<ContentData> contentList = [];
 
@@ -101,7 +171,7 @@ class LightNovelPub {
       var firstPageResponse = await http.get(Uri.parse('$pageURI/chapters?chorder=desc'));
       var firstPageDocument = parse(firstPageResponse.body);
 
-      _fetchPageContent(firstPageDocument, contentList);
+      _fetchPageContentChapter(firstPageDocument, contentList);
       totalChapters = contentList[0].number;
 
       // Loop through subsequent pages in parallel
@@ -115,13 +185,14 @@ class LightNovelPub {
           var pageDocument = parse(pageResponse.body);
           
           await lock.synchronized(() { // Use the lock to synchronize access to contentList
-            _fetchPageContent(pageDocument, contentList);
+            _fetchPageContentChapter(pageDocument, contentList);
           });
         }());
       }
 
       await Future.wait(pageFutures);
 
+      // Fix the ordering
       contentList.sort((a, b) => a.number.compareTo(b.number));
       return contentList;
     } catch (e) {
@@ -129,11 +200,11 @@ class LightNovelPub {
     }
   }
 
-  Future<void> _fetchPageContent(Document document, List<ContentData> contentList) async {
+  Future<void> _fetchPageContentChapter(Document document, List<ContentData> contentList) async {
     try {
-      var contentElement = document.querySelector('[class^="chapter-list"]');
-      if (contentElement != null) {
-        List<Element> paragraphElements = contentElement.getElementsByTagName('a');
+      var contentElementContainer = document.querySelector('[class^="chapter-list"]');
+      if (contentElementContainer != null) {
+        List<Element> paragraphElements = contentElementContainer.getElementsByTagName('a');
         for (int i = 0; i < paragraphElements.length; i++) {
           Element paraElement = paragraphElements[i];
           final partialURI = paraElement.attributes['href'] as String;
@@ -143,10 +214,13 @@ class LightNovelPub {
           final lastUpdated = paraElement.querySelector('[class^="chapter-update"]');
           final lastUpdatedDatetime = lastUpdated?.attributes['datetime'] as String;
           contentList.add(ContentData(
-                number: int.parse(chapterNo), 
-                title: 'Chapter $chapterNo: $chapterTitle', 
+                number: double.parse(chapterNo), 
+                title: chapterTitle, 
                 lastUpdated: DateTime.parse(lastUpdatedDatetime.trim()),
-                contentURL: "$baseUrl$partialURI"
+                contentURI: "$baseURI$partialURI",
+                imageURI: "",
+                contentType: contentType,
+                contentSource: contentSource,
           ));
         }
       }
@@ -154,6 +228,7 @@ class LightNovelPub {
       return;
     }
   }
+
 
   String _fetchContentImageUrl(Document document) {
     final summaryElement = document.querySelector('[class^="cover"]');
