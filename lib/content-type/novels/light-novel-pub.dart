@@ -1,3 +1,4 @@
+import 'package:synchronized/synchronized.dart';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
@@ -7,42 +8,21 @@ import 'package:flutter/foundation.dart';
 class LightNovelPub {
   final String baseUrl = "https://www.lightnovelpub.com";
 
-  Future<List<String>> fetchChapter(String title, int chapterNumber) async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/novel/$title/chapter-$chapterNumber'));
-      final document = parse(response.body);
-      final contentElement = document.getElementById('chapter-container');
-      if (contentElement != null) {
-        final List<String> paragraphs = [];
-        final List<Element> paragraphElements = contentElement.getElementsByTagName('p');
-        paragraphElements.forEach((element) {
-          paragraphs.add(element.text.trim());
-        });
-        return paragraphs;
-      } else {
-        return ['Chapter content not found'];
-      }
-    } catch (e) {
-      return ['Error: $e'];
-    }
-  }
-
   Future<ContentInfo> fetchContentInfo(String title) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/novel/$title'),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', 
-        },
-      );
+      var pageURI = '$baseUrl/novel/$title';
+      final response = await http.get(Uri.parse(pageURI));
       final document = parse(response.body);
-
+      final List<Element> novelContent = document.getElementsByTagName('article');
+      if (novelContent.isNotEmpty) {
+        pageURI = novelContent[0].attributes['itemid'] as String;
+      }
       // Fetch details concurrently using compute for parallel processing
-      final imageUrlFuture = compute(_fetchImageUrl, document);
+      final imageUrlFuture = compute(_fetchContentImageUrl, document);
       final authorFuture = compute(_fetchAuthor, document);
       final summaryFuture = compute(_fetchSummary, document);
       final genreFuture = compute(_fetchGenre, document);
-      final contentListFuture = _fetchContentList(document, title);
+      final contentListFuture = fetchContentList(document, pageURI, title);
 
       // Wait for all futures to complete
       final results = await Future.wait([
@@ -57,8 +37,8 @@ class LightNovelPub {
       final author = results[1] as String;
       final summary = results[2] as List<String>;
       final genre = results[3] as List<String>;
-      final contentList = results[4] as List<String>;
-      final websiteUrl = '$baseUrl/novel/$title';
+      final contentList = results[4] as List<ContentData>;
+      final websiteUrl = pageURI;
 
       return ContentInfo(
         imageUrl: imageUrl,
@@ -86,100 +66,137 @@ class LightNovelPub {
     }
   }
 
-
-  String _fetchImageUrl(document) {
-    final summaryElement = document.querySelector('[class^="cover"]');
-    if (summaryElement != null) {
-      final Element paragraphElements = summaryElement.querySelector('img');
-      final src = paragraphElements.attributes['data-src'];
-      if (src != null) {
-        return src;
-      }
-    } 
-    return "https://via.placeholder.com/150";
-  }
-
-  String _fetchAuthor(document) {
-    final authorElement = document.querySelector('[itemprop="author"]');
-    if (authorElement != null) {
-      final authorText = authorElement.text.trim();
-      if (authorText.isNotEmpty) {
-        return authorText;
-      }
-    }
-    return "Not Found"; 
-  }
-
-
-  List<String> _fetchSummary(document) {
-    final summaryElement = document.querySelector('[class^="summary"]');
-    List<String> summary = [];
-    if (summaryElement != null) {
-      final List<Element> paragraphElements = summaryElement.getElementsByTagName('p');
-      paragraphElements.forEach((element) {
-        summary.add(element.text.trim());
-      });
-    } else {
-      summary.add('Summary not found');
-    }
-    return summary;
-  }
-
-  List<String> _fetchGenre(document) {
-    final genreElement = document.querySelector('[class^="categories"]');
-    List<String> genres = [];
-    if (genreElement != null) {
-      final List<Element> linkElements = genreElement.getElementsByTagName('a');
-      linkElements.forEach((element) {
-        final title = element.text;
-        genres.add(title.trim());
-      });
-    } else {
-      genres.add('Tags not found');
-    }
-    return genres;
-  }
-
-  Future<List<String>> _fetchContentList(document, String title) async {
+  Future<List<String>> fetchContentItem(String title, int chapterNumber) async {
     try {
-      final latestElement = document.querySelector('[class^="latest"]');
-      final latestCHTitle = latestElement.text.trim();
-      RegExp regex = RegExp(r"Chapter \d+: (.+)");
-      Match? match = regex.firstMatch(latestCHTitle);
-      var latestTitle = "";
-      if (match != null) {
-        latestTitle = match.group(1)!;
+      final response = await http.get(Uri.parse('$baseUrl/novel/$title/chapter-$chapterNumber'));
+      
+      if (response.statusCode != 200) {
+        return ['Error: Unable to fetch chapter. Status code: ${response.statusCode}'];
       }
       
-      var pageNumber = 1;
-      String? nextPageUri = "";
-      List<String> contentList = [];
-
-      while(!contentList.contains(latestTitle)){
-        var uri = nextPageUri != "" ?  '$baseUrl$nextPageUri' : '$baseUrl/novel/$title/chapters';
-        var response = await http.get(Uri.parse(uri));
-        var documentChapters = parse(response.body);
-        var contentElement = documentChapters.querySelector('[class^="chapter-list"]');
-        if (contentElement != null) {
-          List<Element> paragraphElements = contentElement.querySelectorAll('[class^="chapter-title"]');
-          paragraphElements.forEach((element) {
-            contentList.add(element.text.trim());
-          });
-        } else {
-          break;
-        }
-        final nextPage = documentChapters.querySelector('[class^="PagedList-skipToNext"]');
-        if (nextPage != null){
-          final List<Element> linkElements = nextPage.getElementsByTagName('a');
-          if (linkElements.length > 0){
-            nextPageUri = linkElements[0].attributes['href'];
-          }
-        }
-        pageNumber += 1;
+      final document = parse(response.body);
+      final contentElement = document.querySelector('[class^="chapter-content"]');
+      
+      if (contentElement == null) {
+        return ['Chapter content not found'];
       }
-      return contentList;
+
+      return contentElement
+          .getElementsByTagName('p')
+          .map((element) => element.text.trim())
+          .toList();
     } catch (e) {
       return ['Error: $e'];
     }
+  }
+
+  Future<List<ContentData>> fetchContentList(Document document, String pageURI,String title) async {
+    try {
+      const pagination = 100;
+      var totalChapters = -1;
+
+      List<ContentData> contentList = [];
+
+      // Fetch the first page to get totalChapters
+      var firstPageResponse = await http.get(Uri.parse('$pageURI/chapters?chorder=desc'));
+      var firstPageDocument = parse(firstPageResponse.body);
+
+      _fetchPageContent(firstPageDocument, contentList);
+      totalChapters = contentList[0].number;
+
+      // Loop through subsequent pages in parallel
+      var pageFutures = <Future>[];
+      var lock = Lock(); // Create a lock for Multithreading
+      var totalPages = (totalChapters / pagination).ceil();
+
+      for (int page = totalPages; page > 1; page--) {
+        pageFutures.add(() async {
+          var pageResponse = await http.get(Uri.parse('$pageURI/chapters?page=$page&chorder=desc'));
+          var pageDocument = parse(pageResponse.body);
+          
+          await lock.synchronized(() { // Use the lock to synchronize access to contentList
+            _fetchPageContent(pageDocument, contentList);
+          });
+        }());
+      }
+
+      await Future.wait(pageFutures);
+
+      contentList.sort((a, b) => a.number.compareTo(b.number));
+      return contentList;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> _fetchPageContent(Document document, List<ContentData> contentList) async {
+    try {
+      var contentElement = document.querySelector('[class^="chapter-list"]');
+      if (contentElement != null) {
+        List<Element> paragraphElements = contentElement.getElementsByTagName('li');
+        for (int i = 0; i < paragraphElements.length; i++) {
+          Element paraElement = paragraphElements[i];
+          final chapterNo = paraElement.querySelector('[class^="chapter-no"]')?.text.trim() as String;
+          final chapterTitle = paraElement.querySelector('[class^="chapter-title"]')?.text.trim() as String;
+          final lastUpdated = paraElement.querySelector('[class^="chapter-update"]');
+          final lastUpdatedDatetime = lastUpdated?.attributes['datetime'] as String;
+          contentList.add(ContentData(number: int.parse(chapterNo), title: 'Chapter $chapterNo: $chapterTitle', lastUpdated: DateTime.parse(lastUpdatedDatetime.trim())));
+        }
+      }
+    } catch (e) {
+      return;
+    }
+  }
+
+  String _fetchContentImageUrl(Document document) {
+    final summaryElement = document.querySelector('[class^="cover"]');
+    if (summaryElement == null) {
+      return 'https://via.placeholder.com/150';
+    }
+
+    final imgElement = summaryElement.querySelector('img');
+    final src = imgElement?.attributes['data-src'];
+    if (src == null) {
+      return 'https://via.placeholder.com/150';
+    }
+
+    return src;
+  }
+
+  String _fetchAuthor(Document document) {
+    final authorElement = document.querySelector('[itemprop^="author"]');
+    if (authorElement == null || authorElement.text.trim().isEmpty) {
+      return 'Author not found';
+    }
+    return authorElement.text.trim();
+  }
+
+  List<String> _fetchSummary(document) {
+    final summaryElement = document.querySelector('[class^="summary"]');
+    if (summaryElement == null) {
+      return ['Summary not found'];
+    }
+    
+    final paragraphElements = summaryElement.getElementsByTagName('p');
+    if (paragraphElements.isEmpty) {
+      return ['Summary not found'];
+    }
+
+    return paragraphElements.map((element) => element.text.trim()).toList().cast<String>();
+  }
+
+
+  List<String> _fetchGenre(Document document) {
+    final genreElement = document.querySelector('[class^="categories"]');
+    if (genreElement == null) {
+      return ['Tags not found'];
+    }
+
+    final linkElements = genreElement.getElementsByTagName('a');
+    if (linkElements.isEmpty) {
+      return ['Tags not found'];
+    }
+
+    return linkElements.map((element) => element.text.trim()).toList();
   }
 }

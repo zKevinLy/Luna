@@ -1,10 +1,22 @@
+class ContentData {
+  final int number;
+  final String title;
+  final DateTime lastUpdated;
+
+  ContentData({
+    required this.number,
+    required this.title,
+    required this.lastUpdated,
+  });
+}
+
 class ContentInfo {
   final String imageUrl;
   final String title;
   final String author;
   final List<String> summary;
   final List<String> genre;
-  final List<String> contentList;
+  final List<ContentData> contentList;
   final String websiteUrl;
 
 

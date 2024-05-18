@@ -12,7 +12,7 @@ class ContentLayout extends StatefulWidget {
 }
 
 class _ContentLayoutState extends State<ContentLayout> {
-  String? _selectedContentTitle; 
+  int? _selectedContentNumber; 
 
   @override
   Widget build(BuildContext context) {
@@ -95,11 +95,11 @@ class _ContentLayoutState extends State<ContentLayout> {
             (chapter) => ListTile(
               onTap: () {
                 setState(() {
-                  _selectedContentTitle = chapter;
+                  _selectedContentNumber = chapter.number;
                 });
               },
               title: Text(
-                chapter,
+                chapter.title,
                 style: const TextStyle(
                   fontSize: 14.0,
                   fontWeight: FontWeight.bold,
@@ -114,11 +114,11 @@ class _ContentLayoutState extends State<ContentLayout> {
 
 
   Widget _buildContent() {
-    if (_selectedContentTitle == null) {
+    if (_selectedContentNumber == null) {
       return Container(); // Initially no content to show
     }
     return FutureBuilder(
-      future: _fetchContentInfo(_selectedContentTitle!),
+      future: _fetchContentInfo(_selectedContentNumber!),
       builder: (BuildContext context, AsyncSnapshot<List<String>> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator(); // Or any other loading indicator
@@ -133,13 +133,12 @@ class _ContentLayoutState extends State<ContentLayout> {
     );
   }
 
-  Future<List<String>> _fetchContentInfo(String chapter) async {
+  Future<List<String>> _fetchContentInfo(int chapterNo) async {
     List<String> contentInfo;
     switch(widget.cardItem.contentType){
       case "novel":
         final lightNovelPub = LightNovelPub();
-        final chIndex = widget.cardItem.contentList.indexOf(chapter);
-        contentInfo = await lightNovelPub.fetchChapter(widget.cardItem.title,chIndex); 
+        contentInfo = await lightNovelPub.fetchContentItem(widget.cardItem.title,chapterNo); 
         break;
       default:
         contentInfo = [];
