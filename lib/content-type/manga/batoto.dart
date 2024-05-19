@@ -7,23 +7,18 @@ import 'package:luna/models/content_info.dart';
 import 'package:flutter/foundation.dart';
 import 'package:luna/bases/luna_base_source.dart';
 
-class LightNovelPub extends ContentSource {
-  LightNovelPub() : super(
-    contentType: "novel",
-    contentSource: "light-novel-pub",
-    baseURI: "https://www.lightnovelpub.com",
-    browseURI: "/browse/genre-all-25060123"
+class Batoto extends ContentSource {
+  Batoto() : super(
+    contentType: "manga",
+    contentSource: "batoto",
+    baseURI: "https://bato.to/",
+    browseURI: "browse?langs=en"
   );
- 
+
   @override
   Future<List<String>> fetchContentItem(ContentData contentData) async {
     try {
       final response = await http.get(Uri.parse(contentData.contentURI));
-      
-      if (response.statusCode != 200) {
-        return ['Error: Unable to fetch chapter. Status code: ${response.statusCode}'];
-      }
-      
       final document = parse(response.body);
       final contentElementContainer = document.querySelector('[class^="chapter-content"]');
       
@@ -41,14 +36,19 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'new', String status = 'all'}) async {
+  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'update', String status = 'all'}) async {
     try {
       Map<int, List<ContentData>> contentMap = {};
       var pageFutures = <Future>[];
 
       for (var pageNumber in pageNumbers) {
         pageFutures.add(() async {
-          var pageResponse = await http.get(Uri.parse('$baseURI$browseURI/order-$orderBy/status-$status?page=$pageNumber'));
+          var statusConfig = "&release=$status";
+          if (status == "all"){
+            statusConfig = "";
+          }
+          var temp = "$baseURI$browseURI$statusConfig&sort=$orderBy.za&page=$pageNumber";
+          var pageResponse = await http.get(Uri.parse('$baseURI$browseURI$statusConfig&sort=$orderBy.za&page=$pageNumber'));
           var pageDocument = parse(pageResponse.body);
 
           var pageContent = <ContentData>[];
@@ -77,25 +77,42 @@ class LightNovelPub extends ContentSource {
 
   Future<void> _fetchPageContentBrowse(Document document, List<ContentData> contentList) async {
     try {
-      var contentElementContainer = document.querySelector('[class^="novel-list"]');
+      var contentElementContainer = document.getElementById("series-list");
       if (contentElementContainer == null) {
       return;
       }
-      List<Element> coverWraps = contentElementContainer.querySelectorAll('[class^="cover-wrap"]');
+      List<Element> coverWraps = contentElementContainer.querySelectorAll('[class^="col item"]');
       for (int i = 0; i < coverWraps.length; i++) {
         Element contentElement = coverWraps[i];
         List<Element> novelItem = contentElement.getElementsByTagName('a');
         if(novelItem.isEmpty){
           continue;
         }
-        var contentCover = novelItem[0];
+        final contentCover = novelItem[0];
         final partialURI = contentCover.attributes['href'] as String;
-        final title = contentCover.attributes['title'] as String;
+
         List<Element> contentImage = contentCover.getElementsByTagName('img');
         var imageURI = "https://via.placeholder.com/150";
         if(contentImage.isNotEmpty){
-          imageURI = contentImage[0].attributes['data-src'] as String;
+          imageURI = contentImage[0].attributes['src'] as String;
         }
+        
+        final title = novelItem[1].text.trim();
+        List<Element> genreElementContainer = contentElement.querySelectorAll('[class^="item-genre"]');
+        List<String> genres = [];
+
+        if (genreElementContainer.isNotEmpty) {
+          final container = genreElementContainer[0].nodes;
+          for (int i = 0; i < container.length; i++) {
+            if (container[i].nodeType == Node.ELEMENT_NODE) {
+              String? text = container[i].text;
+              if (text != null) {
+                genres.add(text.trim());
+              }
+            }
+          }
+        }
+
         contentList.add(ContentData(
               imageURI: imageURI,
               contentURI: "$baseURI$partialURI",
@@ -107,7 +124,7 @@ class LightNovelPub extends ContentSource {
               lastUpdated: DateTime.now(),
               
               summary:[],
-              genre:[],
+              genre:genres,
               contentList:[],
 
               contentIndex: contentList.length,
@@ -143,7 +160,7 @@ class LightNovelPub extends ContentSource {
 
     return headerMap;
   }
-
+  
   @override
   Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
     try {
@@ -193,7 +210,7 @@ class LightNovelPub extends ContentSource {
     }
   }
 
-  Future<void> _fetchPageContentChapter(Document document,ContentData cardItem) async {
+  Future<void> _fetchPageContentChapter(Document document, ContentData cardItem) async {
     try {
       var contentElementContainer = document.querySelector('[class^="chapter-list"]');
       if (contentElementContainer != null) {
@@ -260,7 +277,7 @@ class LightNovelPub extends ContentSource {
 
     return src;
   }
-
+  
   @override
   String fetchAuthor(Document document) {
     final authorElement = document.querySelector('[itemprop^="author"]');
@@ -289,12 +306,12 @@ class LightNovelPub extends ContentSource {
   List<String> fetchGenre(Document document) {
     final genreElement = document.querySelector('[class^="categories"]');
     if (genreElement == null) {
-      return ['Tags not found'];
+      return ['Genre not found'];
     }
 
     final linkElements = genreElement.getElementsByTagName('a');
     if (linkElements.isEmpty) {
-      return ['Tags not found'];
+      return ['Genre not found'];
     }
 
     return linkElements.map((element) => element.text.trim()).toList();

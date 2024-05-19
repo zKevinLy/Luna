@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:luna/models/content_info.dart';
 import 'package:luna/content-type/novels/light_novel_pub.dart';
+import 'package:luna/content-type/manga/batoto.dart';
+
 import 'package:luna/components/viewers/text_viewer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -153,7 +155,16 @@ class ContentLayout extends StatelessWidget {
 
   // Method to fetch content information asynchronously.
   Future<ContentData> _fetchContentData() async {
-    final lightNovelPub = LightNovelPub();
-    return await lightNovelPub.fetchContentDetails(cardItem);
+    switch(cardItem.contentType){
+    case('novel'):
+        final lightNovelPub = LightNovelPub();
+        return await lightNovelPub.fetchContentDetails(cardItem);
+      case('manga'):
+        final lightNovelPub = Batoto();
+        return await lightNovelPub.fetchContentDetails(cardItem);
+      default:
+        final lightNovelPub = LightNovelPub();
+        return await lightNovelPub.fetchContentDetails(cardItem);
+    }
   }
 }
