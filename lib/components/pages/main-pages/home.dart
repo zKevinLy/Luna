@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:luna/bases/luna_base_page.dart';
 
 class HomePage extends LunaBasePage {
-  HomePage({Key? key}) : super(key: key, title: 'Home Page');
+  const HomePage({super.key}) : super(title: 'Home Page');
 
   @override
   List<Widget> buildActions(BuildContext context) {
     return [
       IconButton(
-        icon: Icon(Icons.settings),
+        icon: const Icon(Icons.settings),
         onPressed: () {
           // Handle settings icon press
         },

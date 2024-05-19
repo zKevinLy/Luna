@@ -5,7 +5,7 @@ class TextViewer extends StatelessWidget {
   final List<String> contentItems;
   final ContentData contentData;
 
-  const TextViewer({required this.contentData, required this.contentItems});
+  const TextViewer({super.key, required this.contentData, required this.contentItems});
 
   @override
   Widget build(BuildContext context) {

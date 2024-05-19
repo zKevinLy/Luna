@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:luna/models/content_info.dart';
 import 'package:luna/content-type/novels/light_novel_pub.dart';
 import 'package:luna/components/viewers/text_viewer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContentLayout extends StatelessWidget {
-  final ContentPreview cardItem;
+  final ContentData cardItem;
 
-  const ContentLayout({required this.cardItem});
+  const ContentLayout({super.key, required this.cardItem});
 
   @override
   Widget build(BuildContext context) {
     // FutureBuilder widget is used to handle asynchronous operations.
-    return FutureBuilder<ContentInfo>(
-      future: _fetchContentInfo(), // Call the fetchContentInfo method to get the content information asynchronously.
-      builder: (context, snapshot) { // Builder function that returns different UI based on the snapshot state.
+    return FutureBuilder<ContentData>(
+      future: _fetchContentData(), // Call the fetchContentData method to get the content information asynchronously.
+      builder: (context, snapshot) { 
         if (snapshot.connectionState == ConnectionState.waiting) {
           // Show a loading indicator while waiting for data.
           return Scaffold(
@@ -49,7 +50,7 @@ class ContentLayout extends StatelessWidget {
   }
 
   // Method to build the body of the content layout.
-  Widget buildContentBody(ContentInfo contentInfo) {
+  Widget buildContentBody(ContentData contentInfo) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -83,7 +84,7 @@ class ContentLayout extends StatelessWidget {
   }
 
   // Method to display the image.
-  Widget buildImage(ContentInfo contentInfo) {
+  Widget buildImage(ContentData contentInfo) {
     return Image.network(
       contentInfo.imageURI,
       width: 200,
@@ -93,21 +94,36 @@ class ContentLayout extends StatelessWidget {
   }
 
   // Method to display the content description.
-  Widget buildCardContent(ContentInfo contentInfo) {
-    return Text(
-      'Description: ${contentInfo.summary}',
-      style: const TextStyle(fontSize: 18),
+  Widget buildCardContent(ContentData contentInfo) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description: ${contentInfo.summary}',
+          style: const TextStyle(fontSize: 18),
+        ),
+        const SizedBox(height: 10), // Add some space between the text and the button
+        ElevatedButton(
+          onPressed: () async {
+            final Uri url = Uri.parse(contentInfo.websiteURI);
+            if (await canLaunchUrl(url)) {
+              await launchUrl(url);
+            }
+          },
+          child: const Text('Visit Website'),
+        ),
+      ],
     );
   }
 
   // Method to build the content list as tiles.
-  Widget buildContentList(ContentInfo contentInfo) {
+  Widget buildContentList(ContentData contentInfo) {
     return ListView.builder(
       itemCount: contentInfo.contentList.length,
       itemBuilder: (context, index) {
         final contentData = contentInfo.contentList[index];
         return ListTile(
-          title: Text("#$index ${contentData.title}"),
+          title: Text("#${contentData.contentIndex} : ${contentData.chapterNo} : ${contentData.title}"),
           subtitle: const Text(""),
           onTap: () {
             _handleTileTap(context, contentData);
@@ -117,10 +133,9 @@ class ContentLayout extends StatelessWidget {
     );
   }
 
-
   void _handleTileTap(BuildContext context, ContentData contentData) {
     // Fetch content item asynchronously
-    _fetchContentItem(contentData.contentURI).then((contentItems) {
+    _fetchContentItem(contentData).then((contentItems) {
       // Show content items using TextViewer widget
       Navigator.push(
         context,
@@ -131,15 +146,13 @@ class ContentLayout extends StatelessWidget {
     });
   }
 
-
-  Future<List<String>> _fetchContentItem(String contentURI) async {
+  Future<List<String>> _fetchContentItem(ContentData contentData) async {
     final lightNovelPub = LightNovelPub();
-    return await lightNovelPub.fetchContentItem(contentURI);
+    return await lightNovelPub.fetchContentItem(contentData);
   }
 
-
   // Method to fetch content information asynchronously.
-  Future<ContentInfo> _fetchContentInfo() async {
+  Future<ContentData> _fetchContentData() async {
     final lightNovelPub = LightNovelPub();
     return await lightNovelPub.fetchContentDetails(cardItem);
   }

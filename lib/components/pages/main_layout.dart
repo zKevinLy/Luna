@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class MainLayout extends StatefulWidget {
   final Map<String, Map<String, dynamic>> pages; // Modified to accept Map<String, Map<String, dynamic>>
 
-  const MainLayout({Key? key, required this.pages}) : super(key: key);
+  const MainLayout({super.key, required this.pages});
 
   @override
   MainLayoutState createState() => MainLayoutState();

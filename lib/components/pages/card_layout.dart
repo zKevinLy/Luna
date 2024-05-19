@@ -3,9 +3,9 @@ import 'package:luna/models/content_info.dart';
 import 'package:luna/components/pages/content_layout.dart';
 
 class CardLayout extends StatelessWidget {
-  final List<ContentPreview> cardItems;
+  final List<ContentData> cardItems;
 
-  const CardLayout({required this.cardItems});
+  const CardLayout({super.key, required this.cardItems});
 
   @override
   Widget build(BuildContext context) {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:luna/bases/luna_base_page.dart';
 
 class BrowsePage extends LunaBasePage {
-  BrowsePage({Key? key}) : super(key: key, title: 'Browse Page');
+  const BrowsePage({super.key}) : super(title: 'Browse Page');
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -10,10 +10,9 @@ class BrowsePage extends LunaBasePage {
       Tooltip(
         message: 'Settings',
         child: IconButton(
-          icon: Icon(Icons.settings),
+          icon: const Icon(Icons.settings),
           onPressed: () {
             // Handle settings icon press
-            print('Settings pressed');
           },
         ),
       ),
@@ -59,12 +58,10 @@ class BrowsePage extends LunaBasePage {
   @override
   void onSearchPressed(BuildContext context) {
     // Custom search action for BrowsePage
-    print('Search pressed in BrowsePage');
   }
 
   @override
   void onFilterPressed(BuildContext context) {
     // Custom filter action for BrowsePage
-    print('Filter pressed in BrowsePage');
   }
 }

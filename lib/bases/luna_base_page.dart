@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 abstract class LunaBasePage extends StatefulWidget {
-  LunaBasePage({Key? key, required this.title}) : super(key: key);
+  const LunaBasePage({super.key, required this.title});
 
   final String title;
 
@@ -18,7 +18,7 @@ abstract class LunaBasePage extends StatefulWidget {
 
 class _LunaBasePageState extends State<LunaBasePage> {
   bool _isSearching = false;
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +80,6 @@ class _LunaBasePageState extends State<LunaBasePage> {
               autofocus: true,
               onSubmitted: (value) {
                 // Handle search query here
-                print('Search query: $value');
                 _searchController.clear();
               },
             ),

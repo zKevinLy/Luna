@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 abstract class BaseComponent extends StatelessWidget {
   final String title;
 
-  const BaseComponent({required this.title});
+  const BaseComponent({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {

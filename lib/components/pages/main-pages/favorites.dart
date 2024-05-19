@@ -5,7 +5,7 @@ import 'package:luna/models/content_info.dart';
 import 'package:luna/content-type/novels/light_novel_pub.dart';
 
 class FavoritesPage extends LunaBasePage {
-  FavoritesPage({Key? key}) : super(key: key, title: 'Favorites Page');
+  const FavoritesPage({super.key}) : super(title: 'Favorites Page');
 
   @override
   List<Widget> buildActions(BuildContext context) {
@@ -21,7 +21,7 @@ class FavoritesPage extends LunaBasePage {
 
   @override
   Widget buildBody(BuildContext context) {
-    return FutureBuilder<List<ContentPreview>>(
+    return FutureBuilder<List<ContentData>>(
       future: fetchBrowseList([1, 2, 3]), // Fetch content list for given page numbers
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -33,14 +33,14 @@ class FavoritesPage extends LunaBasePage {
             child: Text('Error: ${snapshot.error}'), // Show error message if fetching fails
           );
         } else {
-          final List<ContentPreview> cardItems = snapshot.data ?? []; // Get the fetched list
+          final List<ContentData> cardItems = snapshot.data ?? []; // Get the fetched list
           return CardLayout(cardItems: cardItems); // Build CardLayout with fetched content
         }
       },
     );
   }
 
-  Future<List<ContentPreview>> fetchBrowseList(List<int> pageNumbers) async {
+  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers) async {
     final lightNovelPub = LightNovelPub();
     final contentList = await lightNovelPub.fetchBrowseList(pageNumbers);
     return contentList;
