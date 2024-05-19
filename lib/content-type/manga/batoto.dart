@@ -4,15 +4,14 @@ import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
 import 'package:luna/models/content_info.dart';
-import 'package:flutter/foundation.dart';
 import 'package:luna/bases/luna_base_source.dart';
 
 class Batoto extends ContentSource {
   Batoto() : super(
-    contentType: "manga",
+    contentType: "image",
     contentSource: "batoto",
-    baseURI: "https://bato.to/",
-    browseURI: "browse?langs=en"
+    baseURI: "https://bato.to",
+    browseURI: "/browse?langs=en"
   );
 
   @override
@@ -20,15 +19,17 @@ class Batoto extends ContentSource {
     try {
       final response = await http.get(Uri.parse(contentData.contentURI));
       final document = parse(response.body);
-      final contentElementContainer = document.querySelector('[class^="chapter-content"]');
-      
+      final contentElementContainer = document.getElementById('viewer');
+
       if (contentElementContainer == null) {
         return ['Chapter content not found'];
       }
 
-      return contentElementContainer
-          .getElementsByTagName('p')
-          .map((element) => element.text.trim())
+      return contentElementContainer.querySelectorAll('[class*="page-img"]')
+          .map((element) {
+            final src = element.attributes['src'];
+            return src ?? 'https://via.placeholder.com/150';
+          })
           .toList();
     } catch (e) {
       return ['Error: $e'];
@@ -47,7 +48,6 @@ class Batoto extends ContentSource {
           if (status == "all"){
             statusConfig = "";
           }
-          var temp = "$baseURI$browseURI$statusConfig&sort=$orderBy.za&page=$pageNumber";
           var pageResponse = await http.get(Uri.parse('$baseURI$browseURI$statusConfig&sort=$orderBy.za&page=$pageNumber'));
           var pageDocument = parse(pageResponse.body);
 
@@ -81,7 +81,7 @@ class Batoto extends ContentSource {
       if (contentElementContainer == null) {
       return;
       }
-      List<Element> coverWraps = contentElementContainer.querySelectorAll('[class^="col item"]');
+      List<Element> coverWraps = contentElementContainer.querySelectorAll('[class*="col item"]');
       for (int i = 0; i < coverWraps.length; i++) {
         Element contentElement = coverWraps[i];
         List<Element> novelItem = contentElement.getElementsByTagName('a');
@@ -98,7 +98,7 @@ class Batoto extends ContentSource {
         }
         
         final title = novelItem[1].text.trim();
-        List<Element> genreElementContainer = contentElement.querySelectorAll('[class^="item-genre"]');
+        List<Element> genreElementContainer = contentElement.querySelectorAll('[class*="item-genre"]');
         List<String> genres = [];
 
         if (genreElementContainer.isNotEmpty) {
@@ -121,7 +121,7 @@ class Batoto extends ContentSource {
               title: title, 
               author: "Undefined", 
               chapterNo: "Undefined",
-              lastUpdated: DateTime.now(),
+              lastUpdated: DateTime.now().toString(),
               
               summary:[],
               genre:genres,
@@ -138,63 +138,13 @@ class Batoto extends ContentSource {
   }
 
   @override
-  Map<String, String> extractHeaderStats(Document document) {
-    var headerMap = <String, String>{};
-
-    var headerStats = document.querySelector('[class^="header-stats"]');
-    
-    if (headerStats != null) {
-      List<Element> headerInfo = headerStats.getElementsByTagName('span').toList();
-      
-      for (var header in headerInfo) {
-        List<Element> strongElements = header.getElementsByTagName('strong').toList();
-        List<Element> smallElements = header.getElementsByTagName('small').toList();
-        
-        if (strongElements.isNotEmpty && smallElements.isNotEmpty) {
-          var key = smallElements.first.text.trim();
-          var value = strongElements.first.text.trim();
-          headerMap[key] = value;
-        }
-      }
-    }
-
-    return headerMap;
-  }
-  
-  @override
   Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
     try {
-      const pagination = 100;
-      var headerMap = extractHeaderStats(document);
-      // total chapters used to calculate number of pages
-      double totalChapters = headerMap.containsKey('Chapters') && headerMap['Chapters'] != null
-          ? double.parse(headerMap['Chapters']!)
-          : 0.0;
-
-
       // Fetch the first page to get totalChapters
-      var firstPageResponse = await http.get(Uri.parse('${cardItem.contentURI}/chapters'));
+      var firstPageResponse = await http.get(Uri.parse(cardItem.contentURI));
       var firstPageDocument = parse(firstPageResponse.body);
 
       await _fetchPageContentChapter(firstPageDocument, cardItem);
-
-      // Loop through subsequent pages in parallel
-      var pageFutures = <Future>[];
-      var lock = Lock(); // Create a lock for Multithreading
-      var totalPages = (totalChapters / pagination).ceil();
-
-      for (int page = totalPages; page > 1; page--) {
-        pageFutures.add(() async {
-          var pageResponse = await http.get(Uri.parse('${cardItem.contentURI}/chapters?page=$page'));
-          var pageDocument = parse(pageResponse.body);
-          
-          await lock.synchronized(() { // Use the lock to synchronize access to cardItem
-            return _fetchPageContentChapter(pageDocument, cardItem);
-          });
-        }());
-      }
-
-      await Future.wait(pageFutures);
 
       // Fix the ordering
       cardItem.contentList.sort((a, b) {
@@ -212,48 +162,52 @@ class Batoto extends ContentSource {
 
   Future<void> _fetchPageContentChapter(Document document, ContentData cardItem) async {
     try {
-      var contentElementContainer = document.querySelector('[class^="chapter-list"]');
+      var contentElementContainer = document.querySelector('[class*="episode-list"]');
       if (contentElementContainer != null) {
-        List<Element> paragraphElements = contentElementContainer.getElementsByTagName('a');
-        for (int i = 0; i < paragraphElements.length; i++) {
-          Element paraElement = paragraphElements[i];
-          final partialURI = paraElement.attributes['href'] as String;
+        List<Element> chapterElements = contentElementContainer.querySelectorAll('[class*="item"]');
+        for (int i = 0; i < chapterElements.length; i++) {
+          Element paraElement = chapterElements[i];
+          var novelItem = paraElement.querySelector('[class*="visited chapt"]');
+          if(novelItem != null){
+            List<Element> chapterNoElements = paraElement.getElementsByTagName('b');
+            var chapterNo = "Undefined";
+            var title = "Undefined";
 
-          final chapterNo = paraElement.querySelector('[class^="chapter-no"]')?.text.trim() as String;
-          final chapterTitle = paraElement.querySelector('[class^="chapter-title"]')?.text.trim() as String;
-          final lastUpdated = paraElement.querySelector('[class^="chapter-update"]');
-          final lastUpdatedDatetime = lastUpdated?.attributes['datetime'] as String;
-
-          bool contentURIPresent = false;
-
-          // Iterate through existing contentList to check if contentURI already exists
-          for (var existingContent in cardItem.contentList) {
-              if (existingContent.contentURI == "$baseURI$partialURI") {
-                  contentURIPresent = true;
-                  break;
+            if(chapterNoElements.isNotEmpty){
+              chapterNo = chapterNoElements[0].text.trim();
+              var titleElement = chapterNoElements[0].nextElementSibling;
+              if (titleElement != null){
+                title = titleElement.text.trim();
               }
-          }
+            }
 
-          // If contentURI is not present, add it to the contentList
-          if (!contentURIPresent) {
-              cardItem.contentList.add(ContentData(
-                  imageURI: "",
-                  contentURI: "$baseURI$partialURI",
-                  websiteURI: "",
+            final partialURI = novelItem.attributes['href'] as String;
+            final extraElements = paraElement.getElementsByTagName('i');
+            var lastUpdated = "Undefined";
+            if (extraElements.isNotEmpty){
+              lastUpdated = extraElements[extraElements.length-1].text;
+            }
+          
+            // If contentURI is not present, add it to the contentList
+            cardItem.contentList.add(ContentData(
+                imageURI: "",
+                contentURI: "$baseURI$partialURI",
+                websiteURI: "",
 
-                  title: chapterTitle, 
-                  author: "",
-                  chapterNo: chapterNo, 
-                  lastUpdated: DateTime.parse(lastUpdatedDatetime.trim()),
+                title: title, 
+                author: "",
+                chapterNo: chapterNo, 
+                lastUpdated: lastUpdated,
 
-                  summary:[],
-                  genre:[],
-                  contentList:[],
-                  
-                  contentIndex: cardItem.contentList.length+1,
-                  contentType: contentType,
-                  contentSource: contentSource,
-              ));
+                summary:[],
+                genre:[],
+                contentList:[],
+                
+                contentIndex: cardItem.contentList.length+1,
+                contentType: contentType,
+                contentSource: contentSource,
+            ));
+
           }
         }
       }
@@ -262,15 +216,16 @@ class Batoto extends ContentSource {
     }
   }
 
+
   @override
   String fetchContentImageUrl(Document document) {
-    final summaryElement = document.querySelector('[class^="cover"]');
+    final summaryElement = document.querySelector('[class*="attr-cover"]');
     if (summaryElement == null) {
       return 'https://via.placeholder.com/150';
     }
 
     final imgElement = summaryElement.querySelector('img');
-    final src = imgElement?.attributes['data-src'];
+    final src = imgElement?.attributes['src'];
     if (src == null) {
       return 'https://via.placeholder.com/150';
     }
@@ -279,41 +234,37 @@ class Batoto extends ContentSource {
   }
   
   @override
-  String fetchAuthor(Document document) {
-    final authorElement = document.querySelector('[itemprop^="author"]');
-    if (authorElement == null || authorElement.text.trim().isEmpty) {
-      return 'Author not found';
+  Map<String, String> extractHeaderInfo(Document document, ContentData cardItem) {
+    var headerMap = <String, String>{};
+
+    var headerInfo = document.querySelector('[class*="attr-main"]');
+    
+    if (headerInfo != null) {
+      List<Element> headerInfoElement = headerInfo.querySelectorAll('[class*="attr-item"]');
+      
+      for (var header in headerInfoElement) {
+        List<Element> property = header.getElementsByTagName('b').toList();
+        List<Element> category = header.getElementsByTagName('span').toList();
+        
+        if (category.isNotEmpty && property.isNotEmpty) {
+          var key = property.first.text.trim();
+          var value = category.first.text.trim();
+          headerMap[key] = value;
+        }
+      }
     }
-    return authorElement.text.trim();
+
+    return headerMap;
   }
 
   @override
   List<String> fetchSummary(document) {
-    final summaryElement = document.querySelector('[class^="summary"]');
+    final summaryElement = document.querySelector('[class*="limit-html"]');
     if (summaryElement == null) {
       return ['Summary not found'];
     }
     
-    final paragraphElements = summaryElement.getElementsByTagName('p');
-    if (paragraphElements.isEmpty) {
-      return ['Summary not found'];
-    }
-
-    return paragraphElements.map((element) => element.text.trim()).toList().cast<String>();
+    return [summaryElement.text];
   }
 
-  @override
-  List<String> fetchGenre(Document document) {
-    final genreElement = document.querySelector('[class^="categories"]');
-    if (genreElement == null) {
-      return ['Genre not found'];
-    }
-
-    final linkElements = genreElement.getElementsByTagName('a');
-    if (linkElements.isEmpty) {
-      return ['Genre not found'];
-    }
-
-    return linkElements.map((element) => element.text.trim()).toList();
-  }
 }

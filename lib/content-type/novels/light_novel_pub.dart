@@ -9,7 +9,7 @@ import 'package:luna/bases/luna_base_source.dart';
 
 class LightNovelPub extends ContentSource {
   LightNovelPub() : super(
-    contentType: "novel",
+    contentType: "text",
     contentSource: "light-novel-pub",
     baseURI: "https://www.lightnovelpub.com",
     browseURI: "/browse/genre-all-25060123"
@@ -25,7 +25,7 @@ class LightNovelPub extends ContentSource {
       }
       
       final document = parse(response.body);
-      final contentElementContainer = document.querySelector('[class^="chapter-content"]');
+      final contentElementContainer = document.querySelector('[class*="chapter-content"]');
       
       if (contentElementContainer == null) {
         return ['Chapter content not found'];
@@ -41,7 +41,7 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'new', String status = 'all'}) async {
+  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'updated', String status = 'all'}) async {
     try {
       Map<int, List<ContentData>> contentMap = {};
       var pageFutures = <Future>[];
@@ -77,11 +77,11 @@ class LightNovelPub extends ContentSource {
 
   Future<void> _fetchPageContentBrowse(Document document, List<ContentData> contentList) async {
     try {
-      var contentElementContainer = document.querySelector('[class^="novel-list"]');
+      var contentElementContainer = document.querySelector('[class*="novel-list"]');
       if (contentElementContainer == null) {
       return;
       }
-      List<Element> coverWraps = contentElementContainer.querySelectorAll('[class^="cover-wrap"]');
+      List<Element> coverWraps = contentElementContainer.querySelectorAll('[class*="cover-wrap"]');
       for (int i = 0; i < coverWraps.length; i++) {
         Element contentElement = coverWraps[i];
         List<Element> novelItem = contentElement.getElementsByTagName('a');
@@ -104,7 +104,7 @@ class LightNovelPub extends ContentSource {
               title: title, 
               author: "Undefined", 
               chapterNo: "Undefined",
-              lastUpdated: DateTime.now(),
+              lastUpdated: DateTime.now().toString(),
               
               summary:[],
               genre:[],
@@ -121,34 +121,10 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  Map<String, String> extractHeaderStats(Document document) {
-    var headerMap = <String, String>{};
-
-    var headerStats = document.querySelector('[class^="header-stats"]');
-    
-    if (headerStats != null) {
-      List<Element> headerInfo = headerStats.getElementsByTagName('span').toList();
-      
-      for (var header in headerInfo) {
-        List<Element> strongElements = header.getElementsByTagName('strong').toList();
-        List<Element> smallElements = header.getElementsByTagName('small').toList();
-        
-        if (strongElements.isNotEmpty && smallElements.isNotEmpty) {
-          var key = smallElements.first.text.trim();
-          var value = strongElements.first.text.trim();
-          headerMap[key] = value;
-        }
-      }
-    }
-
-    return headerMap;
-  }
-
-  @override
   Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
     try {
       const pagination = 100;
-      var headerMap = extractHeaderStats(document);
+      var headerMap = extractHeaderInfo(document, cardItem);
       // total chapters used to calculate number of pages
       double totalChapters = headerMap.containsKey('Chapters') && headerMap['Chapters'] != null
           ? double.parse(headerMap['Chapters']!)
@@ -195,16 +171,16 @@ class LightNovelPub extends ContentSource {
 
   Future<void> _fetchPageContentChapter(Document document,ContentData cardItem) async {
     try {
-      var contentElementContainer = document.querySelector('[class^="chapter-list"]');
+      var contentElementContainer = document.querySelector('[class*="chapter-list"]');
       if (contentElementContainer != null) {
         List<Element> paragraphElements = contentElementContainer.getElementsByTagName('a');
         for (int i = 0; i < paragraphElements.length; i++) {
           Element paraElement = paragraphElements[i];
           final partialURI = paraElement.attributes['href'] as String;
 
-          final chapterNo = paraElement.querySelector('[class^="chapter-no"]')?.text.trim() as String;
-          final chapterTitle = paraElement.querySelector('[class^="chapter-title"]')?.text.trim() as String;
-          final lastUpdated = paraElement.querySelector('[class^="chapter-update"]');
+          final chapterNo = paraElement.querySelector('[class*="chapter-no"]')?.text.trim() as String;
+          final chapterTitle = paraElement.querySelector('[class*="chapter-title"]')?.text.trim() as String;
+          final lastUpdated = paraElement.querySelector('[class*="chapter-update"]');
           final lastUpdatedDatetime = lastUpdated?.attributes['datetime'] as String;
 
           bool contentURIPresent = false;
@@ -227,7 +203,7 @@ class LightNovelPub extends ContentSource {
                   title: chapterTitle, 
                   author: "",
                   chapterNo: chapterNo, 
-                  lastUpdated: DateTime.parse(lastUpdatedDatetime.trim()),
+                  lastUpdated: lastUpdatedDatetime.trim(),
 
                   summary:[],
                   genre:[],
@@ -247,7 +223,7 @@ class LightNovelPub extends ContentSource {
 
   @override
   String fetchContentImageUrl(Document document) {
-    final summaryElement = document.querySelector('[class^="cover"]');
+    final summaryElement = document.querySelector('[class*="cover"]');
     if (summaryElement == null) {
       return 'https://via.placeholder.com/150';
     }
@@ -262,6 +238,30 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
+  Map<String, String> extractHeaderInfo(Document document, ContentData cardItem) {
+    var headerMap = <String, String>{};
+
+    var headerInfo = document.querySelector('[class*="header-stats"]');
+    
+    if (headerInfo != null) {
+      List<Element> headerInfoElement = headerInfo.getElementsByTagName('span').toList();
+      
+      for (var header in headerInfoElement) {
+        List<Element> category = header.getElementsByTagName('strong').toList();
+        List<Element> property = header.getElementsByTagName('small').toList();
+        
+        if (category.isNotEmpty && property.isNotEmpty) {
+          var key = property.first.text.trim();
+          var value = category.first.text.trim();
+          headerMap[key] = value;
+        }
+      }
+    }
+
+    return headerMap;
+  }
+
+  @override
   String fetchAuthor(Document document) {
     final authorElement = document.querySelector('[itemprop^="author"]');
     if (authorElement == null || authorElement.text.trim().isEmpty) {
@@ -272,7 +272,7 @@ class LightNovelPub extends ContentSource {
 
   @override
   List<String> fetchSummary(document) {
-    final summaryElement = document.querySelector('[class^="summary"]');
+    final summaryElement = document.querySelector('[class*="summary"]');
     if (summaryElement == null) {
       return ['Summary not found'];
     }
@@ -287,7 +287,7 @@ class LightNovelPub extends ContentSource {
 
   @override
   List<String> fetchGenre(Document document) {
-    final genreElement = document.querySelector('[class^="categories"]');
+    final genreElement = document.querySelector('[class*="categories"]');
     if (genreElement == null) {
       return ['Tags not found'];
     }

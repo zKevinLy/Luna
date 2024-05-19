@@ -21,7 +21,7 @@ class ContentData extends BaseContent{
   final String title;
   String author;
   String chapterNo;
-  DateTime lastUpdated;
+  String lastUpdated;
 
   List<String> summary;
   List<String> genre;
