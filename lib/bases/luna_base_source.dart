@@ -62,8 +62,10 @@ abstract class ContentSource {
     return [];
   }
 
-  Map<String, String> extractHeaderStats(Document document) {
+  Map<String, String> extractHeaderInfo(Document document, ContentData cardItem) {
     // Implement this method in the derived class
+    // The header may have other information like the Author, summary, etc.. 
+    //    so we can set it directly to the cardItem
     return <String, String>{};
   }
 
@@ -73,18 +75,22 @@ abstract class ContentSource {
   }
 
   String fetchContentImageUrl(Document document) {
+    // Implement this method in the derived class
     return 'https://via.placeholder.com/150';
   }
 
   String fetchAuthor(Document document) {
+    // Implement this method in the derived class
     return "Author not found";
   }
   
   List<String> fetchSummary(Document document) {
+    // Implement this method in the derived class
     return ['Summary not found'];
   }
 
   List<String> fetchGenre(Document document) {
+    // Implement this method in the derived class
     return ['Tags not found'];
   }
 

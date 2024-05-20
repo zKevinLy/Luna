@@ -4,6 +4,7 @@ import 'package:luna/content-type/novels/light_novel_pub.dart';
 import 'package:luna/content-type/manga/batoto.dart';
 
 import 'package:luna/components/viewers/text_viewer.dart';
+import 'package:luna/components/viewers/image_viewer.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ContentLayout extends StatelessWidget {
@@ -107,7 +108,7 @@ class ContentLayout extends StatelessWidget {
         const SizedBox(height: 10), // Add some space between the text and the button
         ElevatedButton(
           onPressed: () async {
-            final Uri url = Uri.parse(contentInfo.websiteURI);
+            final Uri url = Uri.parse(contentInfo.contentURI);
             if (await canLaunchUrl(url)) {
               await launchUrl(url);
             }
@@ -138,28 +139,57 @@ class ContentLayout extends StatelessWidget {
   void _handleTileTap(BuildContext context, ContentData contentData) {
     // Fetch content item asynchronously
     _fetchContentItem(contentData).then((contentItems) {
-      // Show content items using TextViewer widget
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TextViewer(contentData: contentData, contentItems: contentItems),
-        ),
-      );
+      // Determine the appropriate viewer based on content type
+      switch (contentData.contentType) {
+        case 'text':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TextViewer(contentData: contentData, contentItems: contentItems),
+            ),
+          );
+          break;
+        case 'image':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ImageViewer(contentData: contentData, contentItems: contentItems),
+            ),
+          );
+          break;
+        default:
+          // Handle unknown content type or show an error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Unknown content type: ${contentData.contentType}')),
+          );
+          break;
+      }
     });
   }
 
+
+
   Future<List<String>> _fetchContentItem(ContentData contentData) async {
-    final lightNovelPub = LightNovelPub();
-    return await lightNovelPub.fetchContentItem(contentData);
+    switch(cardItem.contentSource){
+      case('light-novel-pub'):
+          final lightNovelPub = LightNovelPub();
+          return await lightNovelPub.fetchContentItem(contentData);
+      case('batoto'):
+        final lightNovelPub = Batoto();
+        return await lightNovelPub.fetchContentItem(contentData);
+      default:
+        final lightNovelPub = LightNovelPub();
+        return await lightNovelPub.fetchContentItem(contentData);
+    }
   }
 
   // Method to fetch content information asynchronously.
   Future<ContentData> _fetchContentData() async {
-    switch(cardItem.contentType){
-    case('novel'):
+    switch(cardItem.contentSource){
+    case('light-novel-pub'):
         final lightNovelPub = LightNovelPub();
         return await lightNovelPub.fetchContentDetails(cardItem);
-      case('manga'):
+      case('batoto'):
         final lightNovelPub = Batoto();
         return await lightNovelPub.fetchContentDetails(cardItem);
       default:
