@@ -39,9 +39,15 @@ class Batoto extends ContentSource {
 
       List<String> imageURIs = [];
       for (var image in images) {
+        var imageIndex = image[0];
         var imageURI = image[1];
         imageURIs.add(imageURI);
       }
+      imageURIs.sort((a, b) {
+        var indexA = images[imageURIs.indexOf(a)][0];
+        var indexB = images[imageURIs.indexOf(b)][0];
+        return indexA.compareTo(indexB);
+      });
       return imageURIs;
     } catch (e) {
       return ['Error: $e'];
@@ -60,7 +66,7 @@ class Batoto extends ContentSource {
           if (status == "all"){
             statusConfig = "";
           }
-          var pageResponse = await http.get(Uri.parse('$baseURI$browseURI?sort=$orderBy$statusConfig&page=$pageNumber'));
+          var pageResponse = await http.get(Uri.parse('$baseURI$browseURI?sort=$orderBy&lang=en$statusConfig&page=$pageNumber'));
           var pageDocument = parse(pageResponse.body);
 
           var pageContent = <ContentData>[];
