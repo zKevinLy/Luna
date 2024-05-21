@@ -5,6 +5,8 @@ import 'package:luna/content-type/manga/batoto.dart';
 
 import 'package:luna/components/viewers/text_viewer.dart';
 import 'package:luna/components/viewers/image_viewer.dart';
+import 'package:luna/components/viewers/video_viewer.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 class ContentLayout extends StatelessWidget {
@@ -162,6 +164,14 @@ class ContentLayout extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => ImageViewer(contentData: contentData, contentItems: contentItems),
+            ),
+          );
+          break;
+        case 'video':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VideoViewer(contentData: contentData, contentItems: contentItems),
             ),
           );
           break;

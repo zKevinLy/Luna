@@ -44,9 +44,9 @@ class BrowsePage extends LunaBasePage {
                 // Content for Anime tab
                 Center(child: Text('Anime Content')),
                 // Content for Manga tab
-                NovelTab(tabType: 'manga'), 
+                TabRouter(tabType: 'manga'), 
                 // Content for Novel tab
-                NovelTab(tabType: 'novel'), 
+                TabRouter(tabType: 'novel'), 
                 // Content for Movie tab
                 Center(child: Text('Movie Content')),
                 // Content for TV Shows tab
@@ -70,9 +70,9 @@ class BrowsePage extends LunaBasePage {
   }
 }
 
-class NovelTab extends StatelessWidget {
+class TabRouter extends StatelessWidget {
   final String tabType;
-  const NovelTab({super.key, required this.tabType});
+  const TabRouter({super.key, required this.tabType});
 
   Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers) async {
     switch(tabType){

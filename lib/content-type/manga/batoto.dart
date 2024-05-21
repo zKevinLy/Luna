@@ -8,7 +8,7 @@ import 'package:luna/bases/luna_base_source.dart';
 
 class Batoto extends ContentSource {
   Batoto() : super(
-    contentType: "image",
+    contentType: "video",
     contentSource: "bato_to",
     baseURI: "https://bato.to"
   );
@@ -213,7 +213,7 @@ class Batoto extends ContentSource {
           }
         }
       }
-
+    
       return imageURIs;
     } catch (e) {
       return ['Error: $e'];

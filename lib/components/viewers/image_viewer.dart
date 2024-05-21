@@ -5,7 +5,7 @@ class ImageViewer extends StatelessWidget {
   final List<String> contentItems;
   final ContentData contentData;
 
-  const ImageViewer({Key? key, required this.contentData, required this.contentItems}) : super(key: key);
+  const ImageViewer({super.key, required this.contentData, required this.contentItems});
 
   @override
   Widget build(BuildContext context) {
