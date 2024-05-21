@@ -1,7 +1,7 @@
 class BaseContent {
   int contentIndex;
   final String contentType; //(novel, anime, movie, etc...)
-  final String contentSource; //(light-novel-pub, 9anime, etc...)
+  final String contentSource; //(light_novel_pub, 9anime, etc...)
   
   BaseContent({
     required this.contentIndex,

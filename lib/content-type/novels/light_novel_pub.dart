@@ -4,51 +4,25 @@ import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
 import 'package:luna/models/content_info.dart';
-import 'package:flutter/foundation.dart';
 import 'package:luna/bases/luna_base_source.dart';
 
 class LightNovelPub extends ContentSource {
   LightNovelPub() : super(
     contentType: "text",
-    contentSource: "light-novel-pub",
-    baseURI: "https://www.lightnovelpub.com",
-    browseURI: "/browse/genre-all-25060123"
+    contentSource: "light_novel_pub",
+    baseURI: "https://www.lightnovelpub.com"
   );
  
   @override
-  Future<List<String>> fetchContentItem(ContentData contentData) async {
+  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String genre = 'all', String orderBy = 'updated', String status = 'all'}) async {
     try {
-      final response = await http.get(Uri.parse(contentData.contentURI));
-      
-      if (response.statusCode != 200) {
-        return ['Error: Unable to fetch chapter. Status code: ${response.statusCode}'];
-      }
-      
-      final document = parse(response.body);
-      final contentElementContainer = document.querySelector('[class*="chapter-content"]');
-      
-      if (contentElementContainer == null) {
-        return ['Chapter content not found'];
-      }
-
-      return contentElementContainer
-          .getElementsByTagName('p')
-          .map((element) => element.text.trim())
-          .toList();
-    } catch (e) {
-      return ['Error: $e'];
-    }
-  }
-
-  @override
-  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'updated', String status = 'all'}) async {
-    try {
+      // Remap Retreived content based on the original page number order
       Map<int, List<ContentData>> contentMap = {};
       var pageFutures = <Future>[];
 
       for (var pageNumber in pageNumbers) {
         pageFutures.add(() async {
-          var pageResponse = await http.get(Uri.parse('$baseURI$browseURI/order-$orderBy/status-$status?page=$pageNumber'));
+          var pageResponse = await http.get(Uri.parse('$baseURI/browse/genre-all-25060123/order-$orderBy/status-$status?page=$pageNumber'));
           var pageDocument = parse(pageResponse.body);
 
           var pageContent = <ContentData>[];
@@ -73,46 +47,44 @@ class LightNovelPub extends ContentSource {
     }
   }
 
-
-
   Future<void> _fetchPageContentBrowse(Document document, List<ContentData> contentList) async {
     try {
       var contentElementContainer = document.querySelector('[class*="novel-list"]');
       if (contentElementContainer == null) {
-      return;
+        return;
       }
+
       List<Element> coverWraps = contentElementContainer.querySelectorAll('[class*="cover-wrap"]');
-      for (int i = 0; i < coverWraps.length; i++) {
-        Element contentElement = coverWraps[i];
+      for (Element contentElement in coverWraps) {
         List<Element> novelItem = contentElement.getElementsByTagName('a');
-        if(novelItem.isEmpty){
+        if (novelItem.isEmpty) {
           continue;
         }
+
         var contentCover = novelItem[0];
-        final partialURI = contentCover.attributes['href'] as String;
-        final title = contentCover.attributes['title'] as String;
+        final partialURI = contentCover.attributes['href'] ?? '';
+        final title = contentCover.attributes['title'] ?? 'Unknown Title';
+
         List<Element> contentImage = contentCover.getElementsByTagName('img');
         var imageURI = "https://via.placeholder.com/150";
-        if(contentImage.isNotEmpty){
-          imageURI = contentImage[0].attributes['data-src'] as String;
+        if (contentImage.isNotEmpty) {
+          imageURI = contentImage[0].attributes['data-src'] ?? imageURI;
         }
+
         contentList.add(ContentData(
-              imageURI: imageURI,
-              contentURI: "$baseURI$partialURI",
-              websiteURI: baseURI,
-
-              title: title, 
-              author: "Undefined", 
-              chapterNo: "Undefined",
-              lastUpdated: DateTime.now().toString(),
-              
-              summary:[],
-              genre:[],
-              contentList:[],
-
-              contentIndex: contentList.length,
-              contentType: contentType,
-              contentSource: contentSource,
+          imageURI: imageURI,
+          contentURI: "$baseURI$partialURI",
+          websiteURI: baseURI,
+          title: title,
+          author: "Undefined",
+          chapterNo: "Undefined",
+          lastUpdated: DateTime.now().toString(),
+          summary: [],
+          genre: [],
+          contentList: [],
+          contentIndex: contentList.length,
+          contentType: contentType,
+          contentSource: contentSource,
         ));
       }
     } catch (e) {
@@ -120,34 +92,29 @@ class LightNovelPub extends ContentSource {
     }
   }
 
+
   @override
   Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
     try {
       const pagination = 100;
-      var headerMap = extractHeaderInfo(document, cardItem);
+      var headerMap = await extractHeaderInfo(document, cardItem);
+      
       // total chapters used to calculate number of pages
       double totalChapters = headerMap.containsKey('Chapters') && headerMap['Chapters'] != null
           ? double.parse(headerMap['Chapters']!)
           : 0.0;
 
-
-      // Fetch the first page to get totalChapters
-      var firstPageResponse = await http.get(Uri.parse('${cardItem.contentURI}/chapters'));
-      var firstPageDocument = parse(firstPageResponse.body);
-
-      await _fetchPageContentChapter(firstPageDocument, cardItem);
-
-      // Loop through subsequent pages in parallel
-      var pageFutures = <Future>[];
-      var lock = Lock(); // Create a lock for Multithreading
+      // Create a lock for synchronization
+      var lock = Lock();
       var totalPages = (totalChapters / pagination).ceil();
+      var pageFutures = <Future>[];
 
-      for (int page = totalPages; page > 1; page--) {
+      for (int page = 1; page <= totalPages; page++) {
         pageFutures.add(() async {
           var pageResponse = await http.get(Uri.parse('${cardItem.contentURI}/chapters?page=$page'));
           var pageDocument = parse(pageResponse.body);
           
-          await lock.synchronized(() { // Use the lock to synchronize access to cardItem
+          await lock.synchronized(() {
             return _fetchPageContentChapter(pageDocument, cardItem);
           });
         }());
@@ -162,57 +129,55 @@ class LightNovelPub extends ContentSource {
         return chapterNoA.compareTo(chapterNoB);
       });
 
-
       return cardItem.contentList;
     } catch (e) {
       return [];
     }
   }
 
-  Future<void> _fetchPageContentChapter(Document document,ContentData cardItem) async {
+
+  Future<void> _fetchPageContentChapter(Document document, ContentData cardItem) async {
     try {
       var contentElementContainer = document.querySelector('[class*="chapter-list"]');
       if (contentElementContainer != null) {
         List<Element> paragraphElements = contentElementContainer.getElementsByTagName('a');
-        for (int i = 0; i < paragraphElements.length; i++) {
-          Element paraElement = paragraphElements[i];
-          final partialURI = paraElement.attributes['href'] as String;
+        for (var paraElement in paragraphElements) {
+          final partialURI = paraElement.attributes['href'] ?? '';
+          final chapterNoFuture = Future(() => paraElement.querySelector('[class*="chapter-no"]')?.text.trim() ?? '');
+          final chapterTitleFuture = Future(() => paraElement.querySelector('[class*="chapter-title"]')?.text.trim() ?? '');
+          final lastUpdatedFuture = Future(() => paraElement.querySelector('[class*="chapter-update"]'));
 
-          final chapterNo = paraElement.querySelector('[class*="chapter-no"]')?.text.trim() as String;
-          final chapterTitle = paraElement.querySelector('[class*="chapter-title"]')?.text.trim() as String;
-          final lastUpdated = paraElement.querySelector('[class*="chapter-update"]');
-          final lastUpdatedDatetime = lastUpdated?.attributes['datetime'] as String;
+          // Wait for all Futures to complete
+          var results = await Future.wait([chapterNoFuture, chapterTitleFuture, lastUpdatedFuture]);
 
-          bool contentURIPresent = false;
+          String chapterNo = results[0] as String;
+          String chapterTitle = results[1] as String;
+          Element lastUpdated = results[2] as Element;
 
-          // Iterate through existing contentList to check if contentURI already exists
-          for (var existingContent in cardItem.contentList) {
-              if (existingContent.contentURI == "$baseURI$partialURI") {
-                  contentURIPresent = true;
-                  break;
-              }
-          }
+          String lastUpdatedDatetime = lastUpdated.attributes['datetime']?.trim() ?? '';
+
+          final contentURI = "$baseURI$partialURI";
+
+          // Check if contentURI already exists
+          bool contentURIPresent = cardItem.contentList.any((existingContent) => existingContent.contentURI == contentURI);
 
           // If contentURI is not present, add it to the contentList
           if (!contentURIPresent) {
-              cardItem.contentList.add(ContentData(
-                  imageURI: "",
-                  contentURI: "$baseURI$partialURI",
-                  websiteURI: "",
-
-                  title: chapterTitle, 
-                  author: "",
-                  chapterNo: chapterNo, 
-                  lastUpdated: lastUpdatedDatetime.trim(),
-
-                  summary:[],
-                  genre:[],
-                  contentList:[],
-                  
-                  contentIndex: cardItem.contentList.length+1,
-                  contentType: contentType,
-                  contentSource: contentSource,
-              ));
+            cardItem.contentList.add(ContentData(
+              imageURI: "",
+              contentURI: contentURI,
+              websiteURI: "",
+              title: chapterTitle,
+              author: "",
+              chapterNo: chapterNo,
+              lastUpdated: lastUpdatedDatetime,
+              summary: [],
+              genre: [],
+              contentList: [],
+              contentIndex: cardItem.contentList.length + 1,
+              contentType: contentType,
+              contentSource: contentSource,
+            ));
           }
         }
       }
@@ -220,6 +185,69 @@ class LightNovelPub extends ContentSource {
       return;
     }
   }
+
+  @override
+  Future<List<String>> fetchContentItem(ContentData contentData) async {
+    try {
+      final response = await http.get(Uri.parse(contentData.contentURI));
+      final document = parse(response.body);
+      final contentElementContainer = document.querySelector('[class*="chapter-content"]');
+      
+      if (contentElementContainer == null) {
+        return [];
+      }
+
+      return contentElementContainer
+          .getElementsByTagName('p')
+          .map((element) => element.text.trim())
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
+  Future<Map<String, String>> extractHeaderInfo(Document document, ContentData cardItem) async {
+    var headerMap = <String, String>{};
+    
+    // Call in parallel
+    var headerInfoFuture = Future(() => document.querySelector('[class*="header-stats"]'));
+    var rankInfoFuture = Future(() => document.querySelector('[class*="rank"]'));
+    var ratingInfoFuture = Future(() => document.querySelector('[class*="rating-star"]'));
+
+    // Wait for all Futures to complete
+    var results = await Future.wait([headerInfoFuture, rankInfoFuture, ratingInfoFuture]);
+    
+    var headerInfo = results[0];
+    var rankInfo = results[1];
+    var ratingInfo = results[2];
+    
+    if (headerInfo != null) {
+      // Extract Novel Stats
+      List<Element> headerInfoElement = headerInfo.getElementsByTagName('span').toList();
+      for (var header in headerInfoElement) {
+        List<Element> category = header.getElementsByTagName('strong').toList();
+        List<Element> property = header.getElementsByTagName('small').toList();
+        
+        if (category.isNotEmpty && property.isNotEmpty) {
+          headerMap[property.first.text.trim()] = category.first.text.trim();
+        }
+      }
+    }
+
+    // Rank Info
+    if (rankInfo != null) {
+      headerMap["rank"] = rankInfo.text.trim();
+    }
+    
+    // Rating Info
+    if (ratingInfo != null) {
+      headerMap["rating"] = ratingInfo.text.trim();
+    }
+    
+    return headerMap;
+  }
+
 
   @override
   String fetchContentImageUrl(Document document) {
@@ -233,37 +261,12 @@ class LightNovelPub extends ContentSource {
     if (src == null) {
       return 'https://via.placeholder.com/150';
     }
-
     return src;
   }
 
   @override
-  Map<String, String> extractHeaderInfo(Document document, ContentData cardItem) {
-    var headerMap = <String, String>{};
-
-    var headerInfo = document.querySelector('[class*="header-stats"]');
-    
-    if (headerInfo != null) {
-      List<Element> headerInfoElement = headerInfo.getElementsByTagName('span').toList();
-      
-      for (var header in headerInfoElement) {
-        List<Element> category = header.getElementsByTagName('strong').toList();
-        List<Element> property = header.getElementsByTagName('small').toList();
-        
-        if (category.isNotEmpty && property.isNotEmpty) {
-          var key = property.first.text.trim();
-          var value = category.first.text.trim();
-          headerMap[key] = value;
-        }
-      }
-    }
-
-    return headerMap;
-  }
-
-  @override
-  String fetchAuthor(Document document) {
-    final authorElement = document.querySelector('[itemprop^="author"]');
+  String fetchContentAuthor(Document document) {
+    final authorElement = document.querySelector('[itemprop*="author"]');
     if (authorElement == null || authorElement.text.trim().isEmpty) {
       return 'Author not found';
     }
@@ -271,32 +274,23 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  List<String> fetchSummary(document) {
+  List<String> fetchContentSummary(document) {
     final summaryElement = document.querySelector('[class*="summary"]');
     if (summaryElement == null) {
       return ['Summary not found'];
     }
     
     final paragraphElements = summaryElement.getElementsByTagName('p');
-    if (paragraphElements.isEmpty) {
-      return ['Summary not found'];
-    }
-
     return paragraphElements.map((element) => element.text.trim()).toList().cast<String>();
   }
 
   @override
-  List<String> fetchGenre(Document document) {
+  List<String> fetchContentGenre(Document document) {
     final genreElement = document.querySelector('[class*="categories"]');
     if (genreElement == null) {
-      return ['Tags not found'];
+      return ['Genre not found'];
     }
-
     final linkElements = genreElement.getElementsByTagName('a');
-    if (linkElements.isEmpty) {
-      return ['Tags not found'];
-    }
-
     return linkElements.map((element) => element.text.trim()).toList();
   }
 }

@@ -102,6 +102,14 @@ class ContentLayout extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
+          'Author: ${contentInfo.author}',
+          style: const TextStyle(fontSize: 18),
+        ),
+        Text(
+          'Genre: ${contentInfo.genre.toString()}',
+          style: const TextStyle(fontSize: 18),
+        ),
+        Text(
           'Description: ${contentInfo.summary}',
           style: const TextStyle(fontSize: 18),
         ),
@@ -171,12 +179,12 @@ class ContentLayout extends StatelessWidget {
 
   Future<List<String>> _fetchContentItem(ContentData contentData) async {
     switch(cardItem.contentSource){
-      case('light-novel-pub'):
+      case('light_novel_pub'):
           final lightNovelPub = LightNovelPub();
           return await lightNovelPub.fetchContentItem(contentData);
-      case('batoto'):
-        final lightNovelPub = Batoto();
-        return await lightNovelPub.fetchContentItem(contentData);
+      case('bato_to'):
+        final batoto = Batoto();
+        return await batoto.fetchContentItem(contentData);
       default:
         final lightNovelPub = LightNovelPub();
         return await lightNovelPub.fetchContentItem(contentData);
@@ -186,12 +194,12 @@ class ContentLayout extends StatelessWidget {
   // Method to fetch content information asynchronously.
   Future<ContentData> _fetchContentData() async {
     switch(cardItem.contentSource){
-    case('light-novel-pub'):
+    case('light_novel_pub'):
         final lightNovelPub = LightNovelPub();
         return await lightNovelPub.fetchContentDetails(cardItem);
-      case('batoto'):
-        final lightNovelPub = Batoto();
-        return await lightNovelPub.fetchContentDetails(cardItem);
+      case('bato_to'):
+        final batoto = Batoto();
+        return await batoto.fetchContentDetails(cardItem);
       default:
         final lightNovelPub = LightNovelPub();
         return await lightNovelPub.fetchContentDetails(cardItem);

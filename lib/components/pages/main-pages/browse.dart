@@ -81,8 +81,8 @@ class NovelTab extends StatelessWidget {
         final contentList = await lightNovelPub.fetchBrowseList(pageNumbers);
         return contentList;
       case('manga'):
-        final lightNovelPub = Batoto();
-        final contentList = await lightNovelPub.fetchBrowseList(pageNumbers);
+        final batoto = Batoto();
+        final contentList = await batoto.fetchBrowseList(pageNumbers);
         return contentList;
     }
     return [];

@@ -9,53 +9,12 @@ import 'package:luna/bases/luna_base_source.dart';
 class Batoto extends ContentSource {
   Batoto() : super(
     contentType: "image",
-    contentSource: "batoto",
-    baseURI: "https://bato.to",
-    browseURI: "/v3x-search"
+    contentSource: "bato_to",
+    baseURI: "https://bato.to"
   );
 
   @override
-  Future<List<String>> fetchContentItem(ContentData contentData) async {
-    try {
-      final response = await http.get(Uri.parse(contentData.contentURI));
-      final document = parse(response.body);
-      List<Element> contentElementContainer = document.getElementsByTagName('astro-island');
-
-      if (contentElementContainer.isEmpty) {
-        return ['Chapter content not found'];
-      }
-      var images = [];
-
-      for (int i = 0; i < contentElementContainer.length; i++) {
-        Element astroIsland = contentElementContainer[i];
-        if (!astroIsland.attributes.containsKey("props")){
-          continue;
-        }
-        if (astroIsland.attributes.containsKey("props") && astroIsland.attributes['props'].toString().contains("imageFiles")) {
-          var jsonString = astroIsland.attributes['props'].toString();
-          images = jsonDecode(jsonDecode(jsonString)["imageFiles"][1]);
-        }
-      }
-
-      List<String> imageURIs = [];
-      for (var image in images) {
-        var imageIndex = image[0];
-        var imageURI = image[1];
-        imageURIs.add(imageURI);
-      }
-      imageURIs.sort((a, b) {
-        var indexA = images[imageURIs.indexOf(a)][0];
-        var indexB = images[imageURIs.indexOf(b)][0];
-        return indexA.compareTo(indexB);
-      });
-      return imageURIs;
-    } catch (e) {
-      return ['Error: $e'];
-    }
-  }
-
-  @override
-  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'field_upload', String status = 'all'}) async {
+  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String genre = 'all', String orderBy = 'field_upload', String status = 'all'}) async {
     try {
       Map<int, List<ContentData>> contentMap = {};
       var pageFutures = <Future>[];
@@ -66,7 +25,7 @@ class Batoto extends ContentSource {
           if (status == "all"){
             statusConfig = "";
           }
-          var pageResponse = await http.get(Uri.parse('$baseURI$browseURI?sort=$orderBy&lang=en$statusConfig&page=$pageNumber'));
+          var pageResponse = await http.get(Uri.parse('$baseURI/v3x-search?sort=$orderBy&lang=en$statusConfig&page=$pageNumber'));
           var pageDocument = parse(pageResponse.body);
 
           var pageContent = <ContentData>[];
@@ -180,17 +139,15 @@ class Batoto extends ContentSource {
           Element divElement = nodeElement;
           var partialElement = divElement.getElementsByTagName('a');
           var chapterTitleElement = divElement.querySelector('[class*="space-x-1"]');
-          var chapterNo = "Undefined";
+          final timeElement = divElement.getElementsByTagName('time');
 
+          var chapterNo = "Undefined";
           if (chapterTitleElement!= null){
             chapterNo = chapterTitleElement.text.trim();
           }
-           
           var title = partialElement[0].text.trim();
-
           final partialURI = partialElement[0].attributes['href'] as String;
           
-          final timeElement = divElement.getElementsByTagName('time');
           var lastUpdated = "Undefined";
           if (timeElement.isNotEmpty){
             lastUpdated = timeElement[0].attributes['time'] as String;
@@ -224,6 +181,45 @@ class Batoto extends ContentSource {
     }
   }
 
+  @override
+  Future<List<String>> fetchContentItem(ContentData contentData) async {
+    try {
+      final response = await http.get(Uri.parse(contentData.contentURI));
+      final document = parse(response.body);
+      List<Element> contentElementContainer = document.getElementsByTagName('astro-island');
+
+      if (contentElementContainer.isEmpty) {
+        return ['Chapter content not found'];
+      }
+      
+      List<String> imageURIs = [];
+
+      for (int i = 0; i < contentElementContainer.length; i++) {
+        Element astroIsland = contentElementContainer[i];
+        if (!astroIsland.attributes.containsKey("props")){
+          continue;
+        }
+        if (astroIsland.attributes.containsKey("props") && astroIsland.attributes['props'].toString().contains("imageFiles")) {
+          var jsonString = astroIsland.attributes['props'].toString();
+          List<dynamic> images = jsonDecode(jsonDecode(jsonString)["imageFiles"][1]);
+
+          images.sort((a, b) {
+            return a[0].compareTo(b[0]);
+          });
+
+          for (var image in images) {
+            var imageURI = image[1];
+            imageURIs.add(imageURI);
+          }
+        }
+      }
+
+      return imageURIs;
+    } catch (e) {
+      return ['Error: $e'];
+    }
+  }
+
 
   @override
   String fetchContentImageUrl(Document document) {
@@ -235,39 +231,34 @@ class Batoto extends ContentSource {
 
     return src;
   }
-  
+
   @override
-  Map<String, String> extractHeaderInfo(Document document, ContentData cardItem) {
-    var headerMap = <String, String>{};
-
-    var headerInfo = document.querySelector('[class*="flex items-center flex-wrap"]');
-    
-    if (headerInfo != null) {
-      List<Element> headerInfoElement = headerInfo.querySelectorAll('[class*="attr-item"]');
-      
-      for (var header in headerInfoElement) {
-        List<Element> property = header.getElementsByTagName('b').toList();
-        List<Element> category = header.getElementsByTagName('span').toList();
-        
-        if (category.isNotEmpty && property.isNotEmpty) {
-          var key = property.first.text.trim();
-          var value = category.first.text.trim();
-          headerMap[key] = value;
-        }
-      }
+  String fetchContentAuthor(Document document) {
+    var author = "Author not found";
+    var authorElement = document.querySelector('[class*="mt-2 text-sm md:text-base opacity-80"]');
+    if (authorElement != null){
+      author = authorElement.text.trim();
     }
-
-    return headerMap;
+    return author;
   }
 
   @override
-  List<String> fetchSummary(document) {
-    final summaryElement = document.querySelector('[class*="limit-html"]');
+  List<String> fetchContentSummary(document) {
+    final summaryElement = document.querySelector('[class*="limit-html-p"]');
     if (summaryElement == null) {
       return ['Summary not found'];
     }
-    
-    return [summaryElement.text];
+    return [utf8.decode(latin1.encode(summaryElement.text))];
   }
 
+  @override
+  List<String> fetchContentGenre(Document document) {
+    List<String> genres = [];
+    var contentElementContainer = document.querySelector('[class*="flex items-center flex-wrap"]');
+    if (contentElementContainer != null){
+      var excludeGenreProp = contentElementContainer.text.trim().substring(7);
+      genres = excludeGenreProp.split(",");
+    }
+    return genres;
+  }
 }

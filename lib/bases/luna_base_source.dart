@@ -8,13 +8,11 @@ abstract class ContentSource {
   final String contentType;
   final String contentSource;
   final String baseURI;
-  final String browseURI;
 
   ContentSource({
     required this.contentType,
     required this.contentSource,
-    required this.baseURI,
-    required this.browseURI,
+    required this.baseURI
   });
 
   Future<ContentData> fetchContentDetails(ContentData cardItem) async {
@@ -24,9 +22,9 @@ abstract class ContentSource {
 
       // Fetch details concurrently using compute for parallel processing
       final imageURIFuture = compute(fetchContentImageUrl, document);
-      final authorFuture = compute(fetchAuthor, document);
-      final summaryFuture = compute(fetchSummary, document);
-      final genreFuture = compute(fetchGenre, document);
+      final authorFuture = compute(fetchContentAuthor, document);
+      final summaryFuture = compute(fetchContentSummary, document);
+      final genreFuture = compute(fetchContentGenre, document);
       final contentListFuture = fetchContentList(document, cardItem);
 
       // Wait for all futures to complete
@@ -52,21 +50,14 @@ abstract class ContentSource {
     }
   }
 
-  Future<List<String>> fetchContentItem(ContentData contentData) async {
+  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String genre = 'all', String orderBy = 'new', String status = 'all'}) async {
     // Implement this method in the derived class
     return [];
   }
 
-  Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String orderBy = 'new', String status = 'all'}) async {
+  Future<List<String>> fetchBrowseGenreList() async {
     // Implement this method in the derived class
     return [];
-  }
-
-  Map<String, String> extractHeaderInfo(Document document, ContentData cardItem) {
-    // Implement this method in the derived class
-    // The header may have other information like the Author, summary, etc.. 
-    //    so we can set it directly to the cardItem
-    return <String, String>{};
   }
 
   Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
@@ -74,22 +65,36 @@ abstract class ContentSource {
     return [];
   }
 
+  Future<List<String>> fetchContentItem(ContentData contentData) async {
+    // Implement this method in the derived class
+    // This should return the list of strings representing either the result, or URL to the source content
+    return [];
+  }
+
+  // Miscellaneous header info that may not exist on all content types
+  Future<Map<String, String>> extractHeaderInfo(Document document, ContentData cardItem) async {
+    // Implement this method in the derived class
+    // The header may have other information like the Author, summary, etc.. 
+    //    so we can set it directly to the cardItem
+    return <String, String>{};
+  }
+
   String fetchContentImageUrl(Document document) {
     // Implement this method in the derived class
     return 'https://via.placeholder.com/150';
   }
 
-  String fetchAuthor(Document document) {
+  String fetchContentAuthor(Document document) {
     // Implement this method in the derived class
     return "Author not found";
   }
   
-  List<String> fetchSummary(Document document) {
+  List<String> fetchContentSummary(Document document) {
     // Implement this method in the derived class
     return ['Summary not found'];
   }
 
-  List<String> fetchGenre(Document document) {
+  List<String> fetchContentGenre(Document document) {
     // Implement this method in the derived class
     return ['Tags not found'];
   }
