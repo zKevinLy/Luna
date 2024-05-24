@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import 'package:chewie/chewie.dart';
+import 'package:webview_windows/webview_windows.dart';
 import 'package:luna/models/content_info.dart';
 
 class VideoViewer extends StatefulWidget {
@@ -14,33 +13,31 @@ class VideoViewer extends StatefulWidget {
 }
 
 class _VideoViewerState extends State<VideoViewer> {
-  late VideoPlayerController _videoPlayerController;
-  late ChewieController _chewieController;
+  final _controller = WebviewController();
 
   @override
   void initState() {
     super.initState();
-    
-    if(widget.contentItems.isNotEmpty) {
-      _initVideoPlayer();
-    }
+    _initializeWebview();
   }
 
-  void _initVideoPlayer() async {
-    _videoPlayerController = VideoPlayerController.networkUrl(
-      Uri.parse(widget.contentItems.first),
-    );
+  Future<void> _initializeWebview() async {
 
-    await _videoPlayerController.initialize();
+    await _controller.initialize();
+    
+    _controller.setPopupWindowPolicy(WebviewPopupWindowPolicy.deny);
+    
+    await _controller.loadUrl('https://vidsrc.to/embed/movie/tt0848228');
 
-    _chewieController = ChewieController(
-      videoPlayerController: _videoPlayerController,
-      autoPlay: true,
-      looping: false,
-      aspectRatio: 16 / 9, // Adjust as needed
-    );
+    if (!mounted) return;
+    setState(() {});
+  }
 
-    setState(() {}); // Trigger a rebuild after initialization
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -50,17 +47,10 @@ class _VideoViewerState extends State<VideoViewer> {
         title: Text(widget.contentData.title),
       ),
       body: Center(
-        child: _chewieController.videoPlayerController.value.isInitialized
-            ? Chewie(controller: _chewieController)
+        child: _controller.value.isInitialized
+            ? Webview(_controller)
             : const CircularProgressIndicator(),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _videoPlayerController.dispose();
-    _chewieController.dispose();
-    super.dispose();
   }
 }

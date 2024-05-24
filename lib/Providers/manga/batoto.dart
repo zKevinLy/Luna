@@ -8,7 +8,7 @@ import 'package:luna/bases/luna_base_source.dart';
 
 class Batoto extends ContentSource {
   Batoto() : super(
-    contentType: "video",
+    contentType: "image",
     contentSource: "bato_to",
     baseURI: "https://bato.to"
   );
@@ -202,11 +202,7 @@ class Batoto extends ContentSource {
         if (astroIsland.attributes.containsKey("props") && astroIsland.attributes['props'].toString().contains("imageFiles")) {
           var jsonString = astroIsland.attributes['props'].toString();
           List<dynamic> images = jsonDecode(jsonDecode(jsonString)["imageFiles"][1]);
-
-          images.sort((a, b) {
-            return a[0].compareTo(b[0]);
-          });
-
+          
           for (var image in images) {
             var imageURI = image[1];
             imageURIs.add(imageURI);

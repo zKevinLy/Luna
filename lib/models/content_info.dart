@@ -27,8 +27,6 @@ class ContentData extends BaseContent{
   List<String> genre;
   List<ContentData> contentList;
 
-
-
   ContentData({
     required this.imageURI,
     required this.contentURI,
@@ -47,4 +45,23 @@ class ContentData extends BaseContent{
     required super.contentType,
     required super.contentSource,
   });
+
+  // Factory constructor to create an empty ContentData instance
+  factory ContentData.empty() {
+    return ContentData(
+      imageURI: '',
+      contentURI: '',
+      websiteURI: '',
+      title: '',
+      author: '',
+      chapterNo: '',
+      lastUpdated: '',
+      summary: [],
+      genre: [],
+      contentList: [],
+      contentIndex: 0,
+      contentType: '',
+      contentSource: '',
+    );
+  }
 }

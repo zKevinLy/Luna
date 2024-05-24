@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:luna/models/content_info.dart';
-import 'package:luna/content-type/novels/light_novel_pub.dart';
-import 'package:luna/content-type/manga/batoto.dart';
+import 'package:luna/Providers/fetch_content.dart';
 
 import 'package:luna/components/viewers/text_viewer.dart';
 import 'package:luna/components/viewers/image_viewer.dart';
@@ -18,7 +17,7 @@ class ContentLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     // FutureBuilder widget is used to handle asynchronous operations.
     return FutureBuilder<ContentData>(
-      future: _fetchContentData(), // Call the fetchContentData method to get the content information asynchronously.
+      future: fetchContentData(cardItem), // Call the fetchContentData method to get the content information asynchronously.
       builder: (context, snapshot) { 
         if (snapshot.connectionState == ConnectionState.waiting) {
           // Show a loading indicator while waiting for data.
@@ -130,32 +129,38 @@ class ContentLayout extends StatelessWidget {
   }
 
   // Method to build the content list as tiles.
-  Widget buildContentList(ContentData contentInfo) {
+  Widget buildContentList(ContentData parentContentData) {
     return ListView.builder(
-      itemCount: contentInfo.contentList.length,
+      itemCount: parentContentData.contentList.length,
       itemBuilder: (context, index) {
-        final contentData = contentInfo.contentList[index];
+        final contentData = parentContentData.contentList[index];
         return ListTile(
           title: Text("#${contentData.contentIndex} : ${contentData.chapterNo} : ${contentData.title}"),
           subtitle: const Text(""),
           onTap: () {
-            _handleTileTap(context, contentData);
+            _handleTileTap(context, contentData, index, parentContentData);
           },
         );
       },
     );
   }
 
-  void _handleTileTap(BuildContext context, ContentData contentData) {
+
+  void _handleTileTap(BuildContext context, ContentData contentData, int currentIndex, ContentData parentContentData) {
     // Fetch content item asynchronously
-    _fetchContentItem(contentData).then((contentItems) {
+    fetchContentItem(cardItem, contentData).then((contentItems) {
       // Determine the appropriate viewer based on content type
       switch (contentData.contentType) {
         case 'text':
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TextViewer(contentData: contentData, contentItems: contentItems),
+              builder: (context) => TextViewer(
+                contentData: contentData,
+                contentItems: contentItems,
+                currentIndex: currentIndex,
+                cardItem: parentContentData,
+              ),
             ),
           );
           break;
@@ -163,7 +168,12 @@ class ContentLayout extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ImageViewer(contentData: contentData, contentItems: contentItems),
+              builder: (context) => ImageViewer(
+                contentData: contentData,
+                contentItems: contentItems,
+                currentIndex: currentIndex,
+                cardItem: parentContentData,
+              ),
             ),
           );
           break;
@@ -183,36 +193,5 @@ class ContentLayout extends StatelessWidget {
           break;
       }
     });
-  }
-
-
-
-  Future<List<String>> _fetchContentItem(ContentData contentData) async {
-    switch(cardItem.contentSource){
-      case('light_novel_pub'):
-          final lightNovelPub = LightNovelPub();
-          return await lightNovelPub.fetchContentItem(contentData);
-      case('bato_to'):
-        final batoto = Batoto();
-        return await batoto.fetchContentItem(contentData);
-      default:
-        final lightNovelPub = LightNovelPub();
-        return await lightNovelPub.fetchContentItem(contentData);
-    }
-  }
-
-  // Method to fetch content information asynchronously.
-  Future<ContentData> _fetchContentData() async {
-    switch(cardItem.contentSource){
-    case('light_novel_pub'):
-        final lightNovelPub = LightNovelPub();
-        return await lightNovelPub.fetchContentDetails(cardItem);
-      case('bato_to'):
-        final batoto = Batoto();
-        return await batoto.fetchContentDetails(cardItem);
-      default:
-        final lightNovelPub = LightNovelPub();
-        return await lightNovelPub.fetchContentDetails(cardItem);
-    }
   }
 }
