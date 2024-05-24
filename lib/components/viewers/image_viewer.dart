@@ -89,13 +89,7 @@ class _ImageViewerState extends State<ImageViewer> {
                 if (index < _contentItems.length) {
                   return Container(
                     margin: EdgeInsets.zero,
-                    child: AspectRatio(
-                      aspectRatio: 1, // Adjust the aspect ratio as needed
-                      child: Image.network(
-                        _contentItems[index],
-                        fit: BoxFit.contain, // Use BoxFit.contain to preserve aspect ratio
-                      ),
-                    ),
+                    child: Image.network(_contentItems[index], fit: BoxFit.cover),
                   );
                 } else {
                   return _buildLoadingIndicator();

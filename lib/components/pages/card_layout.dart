@@ -24,7 +24,37 @@ class _CardLayoutState extends State<CardLayout> {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
-    _fetchData(currentPage);
+    _fetchDataAndThenInit();
+  }
+
+  void _fetchDataAndThenInit() {
+    _fetchData([currentPage]).then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initialFetchData(context);
+      });
+    });
+  }
+
+  
+  void _initialFetchData(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+    int crossAxisCount = (size.width / 200).floor();
+    if (crossAxisCount < 1) crossAxisCount = 1;
+
+    double cardWidth =
+        (size.width - ((crossAxisCount - 1) * 10)) / crossAxisCount;
+    double cardHeight = cardWidth * 1.33;
+    int rowsCount = (size.height / (cardHeight + 10)).floor();
+    int totalCards = crossAxisCount * rowsCount;
+
+    if (cardItems.isNotEmpty && cardItems.length < totalCards) {
+      int totalPages = (totalCards / cardItems.length).ceil();
+      List<int> pageList = [];
+      for (int i = 1; i <= totalPages; i++) {
+        pageList.add(i);
+      }
+      _fetchData(pageList);
+    }
   }
 
   @override
@@ -33,15 +63,15 @@ class _CardLayoutState extends State<CardLayout> {
     super.dispose();
   }
 
-  Future<void> _fetchData(int page) async {
+  Future<void> _fetchData(List<int> pages) async {
     setState(() {
       isLoading = true;
     });
-    final List<ContentData> newData = await fetchBrowseList([page]);
+    final List<ContentData> newData = await fetchBrowseList(pages);
     setState(() {
       isLoading = false;
       cardItems.addAll(newData);
-      currentPage++;
+      currentPage+= pages.length;
     });
   }
 
@@ -49,7 +79,7 @@ class _CardLayoutState extends State<CardLayout> {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       if (!isLoading) {
-        _fetchData(currentPage);
+        _fetchData([currentPage]);
       }
     }
   }
@@ -96,7 +126,7 @@ class _CardLayoutState extends State<CardLayout> {
     return GestureDetector(
       onTap: () {
         if (!isLoading) {
-          _fetchData(currentPage);
+          _fetchData([currentPage]);
         }
       },
       child: Center(
