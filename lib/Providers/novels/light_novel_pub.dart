@@ -71,21 +71,17 @@ class LightNovelPub extends ContentSource {
           imageURI = contentImage[0].attributes['data-src'] ?? imageURI;
         }
 
-        contentList.add(ContentData(
-          imageURI: imageURI,
-          contentURI: "$baseURI$partialURI",
-          websiteURI: baseURI,
-          title: title,
-          author: "Undefined",
-          chapterNo: "Undefined",
-          lastUpdated: DateTime.now().toString(),
-          summary: [],
-          genre: [],
-          contentList: [],
-          contentIndex: contentList.length,
-          contentType: contentType,
-          contentSource: contentSource,
-        ));
+        var fetchedData= ContentData.empty();
+        fetchedData.imageURI = imageURI;
+        fetchedData.contentURI = "$baseURI$partialURI";
+        fetchedData.websiteURI = baseURI;
+        fetchedData.title = title;
+        fetchedData.lastUpdated = DateTime.now().toString();
+        fetchedData.contentIndex = contentList.length;
+        fetchedData.contentType = contentType;
+        fetchedData.contentSource = contentSource;
+
+        contentList.add(fetchedData);
       }
     } catch (e) {
       return;
@@ -163,21 +159,16 @@ class LightNovelPub extends ContentSource {
 
           // If contentURI is not present, add it to the contentList
           if (!contentURIPresent) {
-            cardItem.contentList.add(ContentData(
-              imageURI: "",
-              contentURI: contentURI,
-              websiteURI: "",
-              title: chapterTitle,
-              author: "",
-              chapterNo: chapterNo,
-              lastUpdated: lastUpdatedDatetime,
-              summary: [],
-              genre: [],
-              contentList: [],
-              contentIndex: cardItem.contentList.length + 1,
-              contentType: contentType,
-              contentSource: contentSource,
-            ));
+            var fetchedData= ContentData.empty();
+            fetchedData.contentURI = contentURI;
+            fetchedData.title = chapterTitle;
+            fetchedData.chapterNo = chapterNo;
+            fetchedData.lastUpdated = lastUpdatedDatetime;
+            fetchedData.contentIndex = cardItem.contentList.length+1;
+            fetchedData.contentType = contentType;
+            fetchedData.contentSource = contentSource;
+
+            cardItem.contentList.add(fetchedData);
           }
         }
       }

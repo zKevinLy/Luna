@@ -1,12 +1,20 @@
+import 'dart:ffi';
+
 class BaseContent {
   int contentIndex;
-  final String contentType; //(novel, anime, movie, etc...)
-  final String contentSource; //(light_novel_pub, 9anime, etc...)
+  String contentType; //(novel, anime, movie, etc...)
+  String contentSource; //(light_novel_pub, 9anime, etc...)
+
+  bool viewed;
+  int viewedAmount;
   
   BaseContent({
     required this.contentIndex,
     required this.contentType,
-    required this.contentSource
+    required this.contentSource,
+
+    required this.viewed,
+    required this.viewedAmount
   });
 }
 
@@ -16,9 +24,9 @@ class BaseContent {
 class ContentData extends BaseContent{
   String imageURI;
   String contentURI;
-  final String websiteURI;
+  String websiteURI;
 
-  final String title;
+  String title;
   String author;
   String chapterNo;
   String lastUpdated;
@@ -44,6 +52,9 @@ class ContentData extends BaseContent{
     required super.contentIndex,
     required super.contentType,
     required super.contentSource,
+
+    required super.viewed,
+    required super.viewedAmount,
   });
 
   // Factory constructor to create an empty ContentData instance
@@ -62,6 +73,8 @@ class ContentData extends BaseContent{
       contentIndex: 0,
       contentType: '',
       contentSource: '',
+      viewed: false,
+      viewedAmount: 0,
     );
   }
 }

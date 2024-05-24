@@ -75,24 +75,17 @@ class Batoto extends ContentSource {
           title = contentImage[0].attributes['title'] as String;
         }
         
-        contentList.add(ContentData(
-              imageURI: imageURI,
-              contentURI: "$baseURI$partialURI",
-              websiteURI: baseURI,
+        var fetchedData= ContentData.empty();
+        fetchedData.imageURI = imageURI;
+        fetchedData.contentURI = "$baseURI$partialURI";
+        fetchedData.websiteURI = baseURI;
+        fetchedData.title = title.trim();
+        fetchedData.lastUpdated = DateTime.now().toString();
+        fetchedData.contentIndex = contentList.length;
+        fetchedData.contentType = contentType;
+        fetchedData.contentSource = contentSource;
 
-              title: title.trim(), 
-              author: "Undefined", 
-              chapterNo: "Undefined",
-              lastUpdated: DateTime.now().toString(),
-              
-              summary:[],
-              genre:[],
-              contentList:[],
-
-              contentIndex: contentList.length,
-              contentType: contentType,
-              contentSource: contentSource,
-        ));
+        contentList.add(fetchedData);
       }
     } catch (e) {
       return;
@@ -153,27 +146,18 @@ class Batoto extends ContentSource {
             lastUpdated = timeElement[0].attributes['time'] as String;
           }
 
-          // If contentURI is not present, add it to the contentList
-          cardItem.contentList.add(ContentData(
-              imageURI: "",
-              contentURI: "$baseURI$partialURI",
-              websiteURI: "",
 
-              title: title, 
-              author: "",
-              chapterNo: chapterNo, 
-              lastUpdated: lastUpdated,
+          var fetchedData= ContentData.empty();
+          fetchedData.contentURI = "$baseURI$partialURI";
+          fetchedData.title = title;
+          fetchedData.chapterNo = chapterNo;
+          fetchedData.lastUpdated = lastUpdated;
+          fetchedData.contentIndex = cardItem.contentList.length+1;
+          fetchedData.contentType = contentType;
+          fetchedData.contentSource = contentSource;
 
-              summary:[],
-              genre:[],
-              contentList:[],
-              
-              contentIndex: cardItem.contentList.length+1,
-              contentType: contentType,
-              contentSource: contentSource,
-          ));
+          cardItem.contentList.add(fetchedData);
 
-          
         }
       }
     } catch (e) {
