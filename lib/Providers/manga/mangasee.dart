@@ -6,11 +6,11 @@ import 'package:html/dom.dart';
 import 'package:luna/models/content_info.dart';
 import 'package:luna/bases/luna_base_source.dart';
 
-class Batoto extends ContentSource {
-  Batoto() : super(
+class Mangasee extends ContentSource {
+  Mangasee() : super(
     contentType: "image",
-    contentSource: "bato_to",
-    baseURI: "https://bato.to"
+    contentSource: "mangasee",
+    baseURI: "https://mangasee123.com"
   );
 
   @override

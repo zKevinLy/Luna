@@ -50,6 +50,11 @@ abstract class ContentSource {
     }
   }
 
+  Future<List<ContentData>> fetchSearch(List<int> pageNumbers, String searchInput) async {
+    // Implement this method in the derived class
+    return [];
+  }
+
   Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String genre = 'all', String orderBy = 'new', String status = 'all'}) async {
     // Implement this method in the derived class
     return [];

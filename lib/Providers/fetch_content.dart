@@ -22,3 +22,26 @@ Future<ContentData> fetchContentData(ContentData cardItem) async {
   }
   return ContentData.empty();
 }
+
+Future<List<ContentData>> fetchBrowseList(String tabType, List<int> pageNumbers) async {
+  switch (tabType) {
+    case 'novel':
+      var temp = await LightNovelPub().fetchBrowseList(pageNumbers);
+      return temp;
+    case 'manga':
+      return await Batoto().fetchBrowseList(pageNumbers);
+    default:
+      return [];
+  }
+}
+
+Future<List<ContentData>> fetchSearch(String tabType, List<int> pageNumbers, String searchTerm) async {
+  switch (tabType) {
+    case 'novel':
+      return await LightNovelPub().fetchBrowseList(pageNumbers);
+    case 'manga':
+      return await Batoto().fetchBrowseList(pageNumbers, searchTerm:searchTerm);
+    default:
+      return [];
+  }
+}

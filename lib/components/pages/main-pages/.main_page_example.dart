@@ -26,16 +26,4 @@ class ExamplePage extends LunaBasePage {
       child: Text('Example Page Content'),
     );
   }
-
-  @override
-  void onSearchPressed(BuildContext context) {
-    // Custom search action for ExamplePage
-    print('Search pressed in ExamplePage');
-  }
-
-  @override
-  void onFilterPressed(BuildContext context) {
-    // Custom filter action for ExamplePage
-    print('Filter pressed in ExamplePage');
-  }
 }

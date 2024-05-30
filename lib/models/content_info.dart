@@ -1,10 +1,9 @@
-import 'dart:ffi';
-
 class BaseContent {
   int contentIndex;
   String contentType; //(novel, anime, movie, etc...)
   String contentSource; //(light_novel_pub, 9anime, etc...)
 
+  bool visible;
   bool viewed;
   int viewedAmount;
   
@@ -13,6 +12,7 @@ class BaseContent {
     required this.contentType,
     required this.contentSource,
 
+    required this.visible,
     required this.viewed,
     required this.viewedAmount
   });
@@ -53,6 +53,7 @@ class ContentData extends BaseContent{
     required super.contentType,
     required super.contentSource,
 
+    required super.visible,
     required super.viewed,
     required super.viewedAmount,
   });
@@ -73,6 +74,7 @@ class ContentData extends BaseContent{
       contentIndex: 0,
       contentType: '',
       contentSource: '',
+      visible: true,
       viewed: false,
       viewedAmount: 0,
     );
