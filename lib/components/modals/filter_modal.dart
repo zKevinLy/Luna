@@ -83,7 +83,6 @@ class _FiltersModalState extends State<FiltersModal> {
               _optionsState[option] = value;
               _saveOptionsState();
               _allOptions = _optionsState.values.every((value) => value);
-              widget.onOptionsChanged(_optionsState);
             });
           },
         );

@@ -50,7 +50,7 @@ abstract class ContentSource {
     }
   }
 
-  Future<List<ContentData>> fetchSearch(List<int> pageNumbers, String searchInput) async {
+  Future<List<ContentData>> fetchSearch(List<ContentData> cardItems, List<int> pageNumbers, List<String> genreList, {String searchTerm = "_any"}) async {
     // Implement this method in the derived class
     return [];
   }
@@ -60,7 +60,7 @@ abstract class ContentSource {
     return [];
   }
 
-  List<String> fetchBrowseGenreList() {
+  Future<List<String>> fetchBrowseGenreList() async {
     // Implement this method in the derived class
     // Since Genres are unlikely to change, just hard code it.
     return [];
@@ -128,6 +128,9 @@ abstract class ContentSource {
     return fetchContentGenre(document, cardItem);
   }
 
+
+
+
   String substringBefore(String source, String delimiter) {
     final index = source.indexOf(delimiter);
     return index == -1 ? source : source.substring(0, index);
@@ -137,5 +140,8 @@ abstract class ContentSource {
     final index = source.indexOf(delimiter);
     return index == -1 ? '' : source.substring(index + delimiter.length);
   }
-
+  
+  String sanitize(String input) {
+    return input.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
 }

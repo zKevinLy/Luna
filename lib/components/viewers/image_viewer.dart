@@ -87,9 +87,17 @@ class _ImageViewerState extends State<ImageViewer> {
               itemCount: _contentItems.length + (_isLoading ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index < _contentItems.length) {
-                  return Container(
-                    margin: EdgeInsets.zero,
-                    child: Image.network(_contentItems[index], fit: BoxFit.cover),
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Image.network(
+                          _contentItems[index],
+                          fit: BoxFit.fill, // Change BoxFit.cover to BoxFit.fill
+                        ),
+                      ),
+                    ],
                   );
                 } else {
                   return _buildLoadingIndicator();
@@ -97,6 +105,7 @@ class _ImageViewerState extends State<ImageViewer> {
               },
             ),
           ),
+
         ],
       ),
     );

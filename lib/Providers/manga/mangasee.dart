@@ -17,7 +17,7 @@ class Mangasee extends ContentSource {
   @override
   Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String genre = 'all', String orderBy = 'field_upload', String status = 'all', String searchTerm='_any'}) async {
     try {
-      var pageResponse = await http.get(Uri.parse('$baseURI/search/?sort=lt&desc=true'));
+      var pageResponse = await http.get(Uri.parse('$baseURI/search/?sort=lt&desc=true&name=$searchTerm'));
       var pageDocument = parse(pageResponse.body);
 
       var contentList = <ContentData>[];
@@ -68,6 +68,42 @@ class Mangasee extends ContentSource {
   }
 
   @override
+  Future<List<String>> fetchBrowseGenreList() async {
+    return ['Action','Adult','Adventure','Comedy','Doujinshi','Drama','Ecchi',
+    'Fantasy','Gender Bender','Harem','Hentai','Historical','Horror','Isekai',
+    'Josei','Lolicon','Martial Arts','Mature','Mecha','Mystery','Psychological',
+    'Romance','School Life','Sci-fi','Seinen','Shotacon','Shoujo','Shoujo Ai',
+    'Shounen','Shounen Ai','Slice of Life','Smut','Sports','Supernatural','Tragedy',
+    'Yaoi','Yuri'];
+  }
+
+  @override
+  Future<List<ContentData>> fetchSearch(List<ContentData> cardItems, List<int> pageNumbers, List<String> genreList, {String searchTerm = '_any'}) async {
+    // Function to sanitize input by removing non-alphanumeric characters and converting to lowercase
+    String sanitize(String input) {
+      return input.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    }
+
+    // Sanitize the search input
+    String sanitizedSearchInput = sanitize(searchTerm);
+
+    // Filter card items based on title and genres
+    List<ContentData> results = cardItems.where((card) {
+      bool matchesTitle = true;
+
+      if (searchTerm != '_any'){
+        matchesTitle = sanitize(card.title).contains(sanitizedSearchInput);
+      }
+
+      bool matchesGenres = genreList.every((genre) => card.genre.contains(genre));
+
+      return matchesTitle && matchesGenres;
+    }).toList();
+
+    return results;
+  }
+
+  @override
   Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
     try {
       // Fetch the first page to get totalChapters
@@ -114,13 +150,15 @@ class Mangasee extends ContentSource {
 
           var fetchedData= ContentData.empty();
             fetchedData.contentURI = '$baseURI/read-online/${cardItem.itemID}-chapter-$actualChapterNumber.html';
-            fetchedData.title = chapterData.chapterName;
+            fetchedData.title = (chapterData.chapterName.trim() == "null" || chapterData.chapterName.trim() == "") ? "Chapter ${cardItem.contentList.length+1}": chapterData.chapterName;
             fetchedData.itemID = cardItem.itemID;
             fetchedData.lastUpdated = chapterData.date;
             fetchedData.contentIndex = cardItem.contentList.length+1;
             fetchedData.contentType = contentType;
             fetchedData.contentSource = contentSource;
-            cardItem.contentList.add(fetchedData);
+            if (!cardItem.contentList.contains(fetchedData)){
+              cardItem.contentList.add(fetchedData);
+            }
         }
       }
 
@@ -138,7 +176,6 @@ class Mangasee extends ContentSource {
 
       var nodes = document.querySelectorAll('script');
       // Process each script node
-      List<dynamic> chapterList = [];
       for (var scriptNode in nodes) {
         if (!scriptNode.text.contains("MainFunction")) {
           continue;
@@ -154,21 +191,38 @@ class Mangasee extends ContentSource {
         var chapterListString = substringBefore(
             substringAfter(content, "vm.CHAPTERS = "), ";")
             .trim();
+
+        List<dynamic> chapterList = [];
         chapterList = jsonDecode(chapterListString);
-        for (var chapter in chapterList){
+        for (var chapter in chapterList) {
           var chapterData = Chapter.fromJson(chapter);
           int totalPages = int.parse(chapterData.page); 
+          int mainChapterNumber = int.parse(chapterData.chapter.substring(2, 5));
+          double fractionalPart = int.parse(chapterData.chapter.substring(5)) / 10.0;
+
+          num actualChapterNumber; // Use num type to accommodate both int and double
+
+          if (fractionalPart == 0.0) {
+            actualChapterNumber = mainChapterNumber; // If fractional part is 0, assign integer
+          } else {
+            actualChapterNumber = mainChapterNumber + fractionalPart; // If fractional part is not 0, assign double
+          }
 
           for (int i = 1; i <= totalPages; i++) {
-            String paddedContentIndex = contentData.contentIndex.toString().padLeft(4, '0');
+            String paddedContentIndex;
+            if (fractionalPart == 0.0) {
+              paddedContentIndex = actualChapterNumber.toInt().toString().padLeft(4, '0');
+            } else {
+              paddedContentIndex = actualChapterNumber.toString().padLeft(4, '0');
+            }
+
             String paddedPage = i.toString().padLeft(3, '0'); 
-            
+                    
             var chapterURI = "https://$directory/manga/${contentData.itemID}/${paddedContentIndex}-${paddedPage}.png";
 
             imageURIs.add(chapterURI);
           }
         }
-
       }
 
       return imageURIs;

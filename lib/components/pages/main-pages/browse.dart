@@ -5,6 +5,8 @@ import 'package:luna/models/content_info.dart';
 import 'package:luna/Providers/fetch_content.dart';
 import 'package:luna/components/modals/settings_modal.dart';
 import 'package:luna/components/pages/search.dart'; // Import the SearchBar
+import 'package:shared_preferences/shared_preferences.dart';
+
 class BrowsePage extends StatefulWidget {
   const BrowsePage({Key? key}) : super(key: key);
 
@@ -15,6 +17,8 @@ class BrowsePage extends StatefulWidget {
 class _BrowsePageState extends State<BrowsePage> {
   String selectedTab = "";
   Map<String, dynamic> selectedSources = {};
+  Map<String, dynamic> selectedFilters = {};
+
   List<String> tabNames = ["Anime", "Manga", "Novel", "Movie", "TV Shows"];
   Map<String, List<String>> tabSources = {
     "anime": [],
@@ -27,7 +31,32 @@ class _BrowsePageState extends State<BrowsePage> {
   List<ContentData> cardItems = [];
   List<ContentData> searchResults = []; // Variable to hold search results
   bool _isSearching = false;
+  bool _isFiltering = false;
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSources("Anime");
+  }
+
+  void _loadSavedSources(String tabName) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    var key = tabName.toLowerCase();
+    setState(() {
+      for (var source in tabSources[key] ?? []) {
+        selectedSources[source] = prefs.getBool(source) ?? false;
+      }
+    });
+  }
+
+
+  void _saveSelectedSources() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    for (var entry in selectedSources.entries) {
+      prefs.setBool(entry.key, entry.value);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +81,9 @@ class _BrowsePageState extends State<BrowsePage> {
               tabs: tabNames.map((name) => Tab(text: name)).toList(),
               onTap: (index) {
                 setState(() {
-                  selectedTab =
-                      tabNames[index].toLowerCase().replaceAll(" ", "");
+                  _isFiltering = false;
+                  _isSearching = false;
+                  selectedTab = tabNames[index].toLowerCase().replaceAll(" ", "");
                   cardItems.clear();
                   _updateCardItems();
                 });
@@ -108,14 +138,14 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Widget _buildTabContent(String tabName) {
-    if (_isSearching) {
+    if (_isSearching || _isFiltering && cardItems.isNotEmpty) {
       return _buildGridView(context, searchResults);
     } else {
       var tabNameLower = tabName.toLowerCase().replaceAll(" ", "");
       switch (tabNameLower) {
         case 'manga':
         case 'novel':
-          if (selectedTab == tabNameLower){
+          if (selectedTab == tabNameLower) {
             return _buildSubPage(tabType: tabNameLower);
           }
           return Container();
@@ -127,7 +157,7 @@ class _BrowsePageState extends State<BrowsePage> {
 
   Widget _buildSubPage({required String tabType}) {
     return FutureBuilder<List<ContentData>>(
-      future: fetchBrowseList(tabType, [1], selectedSources: selectedSources),
+      future: fetchBrowseList(tabType, [1], getActiveSources(selectedSources)),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -220,19 +250,29 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   void _onFilterPressed() {
-    List<String> options = fetchBrowseGenreList(selectedTab); 
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => FiltersModal(
-        options: options,
-        onOptionsChanged: (selectedSources) {
-          // Handle the updated options here
-          // print(updatedOptions);
-        },
-      ),
+      builder: (context) {
+        return FutureBuilder<List<String>>(
+          future: fetchBrowseGenreList(selectedTab, selectedSources: selectedSources),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            return FiltersModal(
+              options: snapshot.data!,
+              onOptionsChanged: (selectedFilters) async {
+                selectedFilters = selectedFilters;
+                _isFiltering = true;
+                searchResults = await fetchSearch(cardItems, selectedTab, [1], getActiveGenres(selectedFilters), getActiveSources(selectedSources));
+                setState(() {});
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -242,24 +282,37 @@ class _BrowsePageState extends State<BrowsePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => SettingsModal(
-        options: tabSources[selectedTab] ?? [], 
+        options: tabSources[selectedTab] ?? [],
         onOptionsChanged: (selected) async {
           selectedSources = selected;
+          _saveSelectedSources(); // Save the selected sources
           setState(() {});
         },
       ),
     );
   }
 
-
-
   void _onSearchSubmitted(String query) async {
-    searchResults = await fetchSearch(selectedTab, [1], query);
+    searchResults = await fetchSearch(cardItems, selectedTab, [1], getActiveGenres(selectedFilters), getActiveSources(selectedSources), searchTerm: query);
     setState(() {});
   }
 
+  List<String> getActiveGenres(Map<String, dynamic> selectedFilters) {
+    return selectedFilters.entries
+      .where((entry) => entry.value == true)
+      .map((entry) => entry.key)
+      .toList();
+  }
+
+  List<String> getActiveSources(Map<String, dynamic> selectedSources) {
+    return selectedSources.entries
+      .where((entry) => entry.value == true)
+      .map((entry) => entry.key)
+      .toList();
+  }
+
   void _onSearchClear() async {
-    searchResults.clear();
+    searchResults = cardItems;
     setState(() {});
   }
 

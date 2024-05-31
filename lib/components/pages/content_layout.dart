@@ -133,9 +133,11 @@ class ContentLayout extends StatelessWidget {
     return ListView.builder(
       itemCount: parentContentData.contentList.length,
       itemBuilder: (context, index) {
-        final contentData = parentContentData.contentList[index];
+        final contentData = parentContentData.contentList[index]; 
         return ListTile(
-          title: Text("#${contentData.contentIndex} : ${contentData.itemID} : ${contentData.title}"),
+          title: contentData.itemID != parentContentData.itemID
+              ? Text("#${contentData.contentIndex} : ${contentData.itemID} : ${contentData.title}")
+              : Text("#${contentData.contentIndex} : ${contentData.title}"),
           subtitle: const Text(""),
           onTap: () {
             _handleTileTap(context, contentData, index, parentContentData);
@@ -144,6 +146,7 @@ class ContentLayout extends StatelessWidget {
       },
     );
   }
+
 
 
   void _handleTileTap(BuildContext context, ContentData contentData, int currentIndex, ContentData parentContentData) {

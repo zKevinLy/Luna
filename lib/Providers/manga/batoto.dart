@@ -97,7 +97,7 @@ class Batoto extends ContentSource {
   }
 
   @override
-  List<String> fetchBrowseGenreList()  {
+  Future<List<String>> fetchBrowseGenreList() async {
     List<String> genres = [
       'Artbook', 'Cartoon', 'Comic', 'Doujinshi', 'Imageset', 'Manga', 'Manhua', 'Manhwa', 'Webtoon', 'Western', 
       '4-Koma', 'Oneshot', 'Shoujo(G)', 'Shounen(B)', 'Josei(W)', 'Seinen(M)', 'Yuri(GL)', 'Yaoi (BL)', 'Bara(ML)', 
