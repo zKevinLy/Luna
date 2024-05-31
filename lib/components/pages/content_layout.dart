@@ -17,7 +17,7 @@ class ContentLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     // FutureBuilder widget is used to handle asynchronous operations.
     return FutureBuilder<ContentData>(
-      future: fetchContentData(cardItem), // Call the fetchContentData method to get the content information asynchronously.
+      future: fetchContentDetails(cardItem), // Call the fetchContentDetails method to get the content information asynchronously.
       builder: (context, snapshot) { 
         if (snapshot.connectionState == ConnectionState.waiting) {
           // Show a loading indicator while waiting for data.
@@ -135,7 +135,7 @@ class ContentLayout extends StatelessWidget {
       itemBuilder: (context, index) {
         final contentData = parentContentData.contentList[index];
         return ListTile(
-          title: Text("#${contentData.contentIndex} : ${contentData.chapterNo} : ${contentData.title}"),
+          title: Text("#${contentData.contentIndex} : ${contentData.itemID} : ${contentData.title}"),
           subtitle: const Text(""),
           onTap: () {
             _handleTileTap(context, contentData, index, parentContentData);

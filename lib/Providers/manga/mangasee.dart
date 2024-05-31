@@ -5,6 +5,7 @@ import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
 import 'package:luna/models/content_info.dart';
 import 'package:luna/bases/luna_base_source.dart';
+import 'package:flutter/foundation.dart';
 
 class Mangasee extends ContentSource {
   Mangasee() : super(
@@ -16,83 +17,53 @@ class Mangasee extends ContentSource {
   @override
   Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String genre = 'all', String orderBy = 'field_upload', String status = 'all', String searchTerm='_any'}) async {
     try {
-      Map<int, List<ContentData>> contentMap = {};
-      var pageFutures = <Future>[];
+      var pageResponse = await http.get(Uri.parse('$baseURI/search/?sort=lt&desc=true'));
+      var pageDocument = parse(pageResponse.body);
 
-      for (var pageNumber in pageNumbers) {
-        pageFutures.add(() async {
-          var statusConfig = "&status=$status";
-          if (status == "all"){
-            statusConfig = "";
-          }
-          var searchConfig = "&word=$searchTerm";
-          if (searchTerm == "_all"){
-            searchConfig = "";
-          }
-          var pageResponse = await http.get(Uri.parse('$baseURI/v3x-search?sort=$orderBy$searchConfig&lang=en$statusConfig&page=$pageNumber'));
-          var pageDocument = parse(pageResponse.body);
+      var contentList = <ContentData>[];
 
-          var pageContent = <ContentData>[];
-          _fetchPageContentBrowse(pageDocument, pageContent);
+      var scriptNodes = pageDocument.querySelectorAll('script');
+      List<dynamic> dataList = [];
+
+      for (var scriptNode in scriptNodes) {
+        if (!scriptNode.text.contains("MainFunction")) {
+          continue;
+        }
+        var content = scriptNode.text;
+        var directory = substringBefore(
+            substringAfter(content, "vm.Directory = "), "vm.GetIntValue")
+            .replaceAll(";", " ")
+            .trim();
+        dataList = jsonDecode(directory);
+        // Process each object in the array
+        for (var dataObject in dataList) {
+          // Deserialize JSON into MangaData object
+
+          var mangaData = MangaData.fromJson(dataObject);
+
+          var fetchedData= ContentData.empty();
+          fetchedData.imageURI = 'https://temp.compsci88.com/cover/${mangaData.id}.jpg';
+          fetchedData.contentURI = "$baseURI/manga/${mangaData.id}";
+          fetchedData.websiteURI = baseURI;
+          fetchedData.title = mangaData.series;
+          fetchedData.author = mangaData.authors.join(", ");
+          fetchedData.status = mangaData.status;
+          fetchedData.year = mangaData.year;
+          fetchedData.itemID = mangaData.id;
+          fetchedData.lastUpdated = mangaData.lastUpdated;
+          fetchedData.nsfw = mangaData.hentai;
+          fetchedData.genre = mangaData.genres;
+          fetchedData.contentIndex = contentList.length;
+          fetchedData.contentType = contentType;
+          fetchedData.contentSource = contentSource;
           
-          contentMap[pageNumber] = pageContent;
-        }());
+          // Add MangaData object to the list
+          contentList.add(fetchedData);
+        }
       }
-
-      await Future.wait(pageFutures);
-
-      // Flatten the contentMap into a list, sorted by the key
-      List<ContentData> contentList = [];
-      var sortedKeys = contentMap.keys.toList()..sort();
-      for (var key in sortedKeys) {
-        contentList.addAll(contentMap[key]!);
-      }
-
       return contentList;
     } catch (e) {
       return [];
-    }
-  }
-
-
-
-  Future<void> _fetchPageContentBrowse(Document document, List<ContentData> contentList) async {
-    try {
-      var contentElements = document.querySelectorAll('[class*="pb-5"]');
-      if (contentElements.isEmpty) {
-        return;
-      }
-      for (int i = 0; i < contentElements.length; i++) {
-        Element contentElement = contentElements[i];
-        List<Element> novelItem = contentElement.getElementsByTagName('a');
-        if(novelItem.isEmpty){
-          continue;
-        }
-        final contentCover = novelItem[0];
-        final partialURI = contentCover.attributes['href'] as String;
-
-        List<Element> contentImage = contentCover.getElementsByTagName('img');
-        var imageURI = "https://via.placeholder.com/150";
-        var title = "Undefined";
-        if(contentImage.isNotEmpty){
-          imageURI = contentImage[0].attributes['src'] as String;
-          title = contentImage[0].attributes['title'] as String;
-        }
-        
-        var fetchedData= ContentData.empty();
-        fetchedData.imageURI = imageURI;
-        fetchedData.contentURI = "$baseURI$partialURI";
-        fetchedData.websiteURI = baseURI;
-        fetchedData.title = title.trim();
-        fetchedData.lastUpdated = DateTime.now().toString();
-        fetchedData.contentIndex = contentList.length;
-        fetchedData.contentType = contentType;
-        fetchedData.contentSource = contentSource;
-
-        contentList.add(fetchedData);
-      }
-    } catch (e) {
-      return;
     }
   }
 
@@ -107,11 +78,10 @@ class Mangasee extends ContentSource {
 
       // Fix the ordering
       cardItem.contentList.sort((a, b) {
-        double chapterNoA = double.tryParse(a.chapterNo) ?? a.contentIndex.toDouble();
-        double chapterNoB = double.tryParse(b.chapterNo) ?? b.contentIndex.toDouble();
-        return chapterNoA.compareTo(chapterNoB);
+        double itemIDA = double.tryParse(a.itemID) ?? a.contentIndex.toDouble();
+        double itemIDB = double.tryParse(b.itemID) ?? b.contentIndex.toDouble();
+        return itemIDA.compareTo(itemIDB);
       });
-
 
       return cardItem.contentList;
     } catch (e) {
@@ -121,49 +91,39 @@ class Mangasee extends ContentSource {
 
   Future<void> _fetchPageContentChapter(Document document, ContentData cardItem) async {
     try {
-      var contentElementContainer = document.querySelector('[class*="space-y-5"]');
-      if (contentElementContainer != null) {
-        List<Element> chapterElements = contentElementContainer.getElementsByTagName('astro-slot');
-        if (chapterElements.isEmpty){
-          return;
+      var nodes = document.querySelectorAll('script');
+      // Process each script node
+      List<dynamic> chapterList = [];
+      for (var scriptNode in nodes) {
+        if (!scriptNode.text.contains("MainFunction")) {
+          continue;
         }
-        for (int i = 0; i < chapterElements[0].nodes.length; i++) {
-          Node nodeElement = chapterElements[0].nodes[i];
-          if (nodeElement is! Element) {
-            continue;
-          }
+        // Extract content from the script tag
+        var content = scriptNode.text;
+        var chapterListString = substringBefore(
+            substringAfter(content, "vm.Chapters = "), ";")
+            .trim();
+        chapterList = jsonDecode(chapterListString);
+        for (var chapter in chapterList){
+          var chapterData = Chapter.fromJson(chapter);
 
-          Element divElement = nodeElement;
-          var partialElement = divElement.getElementsByTagName('a');
-          var chapterTitleElement = divElement.querySelector('[class*="space-x-1"]');
-          final timeElement = divElement.getElementsByTagName('time');
+          int mainChapterNumber = int.parse(chapterData.chapter.substring(2, 5));
+          double fractionalPart = int.parse(chapterData.chapter.substring(5)) / 10.0;
 
-          var chapterNo = "Undefined";
-          if (chapterTitleElement!= null){
-            chapterNo = chapterTitleElement.text.trim();
-          }
-          var title = partialElement[0].text.trim();
-          final partialURI = partialElement[0].attributes['href'] as String;
-          
-          var lastUpdated = "Undefined";
-          if (timeElement.isNotEmpty){
-            lastUpdated = timeElement[0].attributes['time'] as String;
-          }
-
+          double actualChapterNumber = mainChapterNumber + fractionalPart;
 
           var fetchedData= ContentData.empty();
-          fetchedData.contentURI = "$baseURI$partialURI";
-          fetchedData.title = title;
-          fetchedData.chapterNo = chapterNo;
-          fetchedData.lastUpdated = lastUpdated;
-          fetchedData.contentIndex = cardItem.contentList.length+1;
-          fetchedData.contentType = contentType;
-          fetchedData.contentSource = contentSource;
-
-          cardItem.contentList.add(fetchedData);
-
+            fetchedData.contentURI = '$baseURI/read-online/${cardItem.itemID}-chapter-$actualChapterNumber.html';
+            fetchedData.title = chapterData.chapterName;
+            fetchedData.itemID = cardItem.itemID;
+            fetchedData.lastUpdated = chapterData.date;
+            fetchedData.contentIndex = cardItem.contentList.length+1;
+            fetchedData.contentType = contentType;
+            fetchedData.contentSource = contentSource;
+            cardItem.contentList.add(fetchedData);
         }
       }
+
     } catch (e) {
       return;
     }
@@ -174,30 +134,43 @@ class Mangasee extends ContentSource {
     try {
       final response = await http.get(Uri.parse(contentData.contentURI));
       final document = parse(response.body);
-      List<Element> contentElementContainer = document.getElementsByTagName('astro-island');
-
-      if (contentElementContainer.isEmpty) {
-        return ['Chapter content not found'];
-      }
-      
       List<String> imageURIs = [];
 
-      for (int i = 0; i < contentElementContainer.length; i++) {
-        Element astroIsland = contentElementContainer[i];
-        if (!astroIsland.attributes.containsKey("props")){
+      var nodes = document.querySelectorAll('script');
+      // Process each script node
+      List<dynamic> chapterList = [];
+      for (var scriptNode in nodes) {
+        if (!scriptNode.text.contains("MainFunction")) {
           continue;
         }
-        if (astroIsland.attributes.containsKey("props") && astroIsland.attributes['props'].toString().contains("imageFiles")) {
-          var jsonString = astroIsland.attributes['props'].toString();
-          List<dynamic> images = jsonDecode(jsonDecode(jsonString)["imageFiles"][1]);
-          
-          for (var image in images) {
-            var imageURI = image[1];
-            imageURIs.add(imageURI);
+        // Extract content from the script tag
+        var content = scriptNode.text;
+        var directory = substringBefore(
+          substringAfter(content, "vm.CurPathName = \""), "\"")
+          .replaceAll(";", " ")
+          .trim();
+        
+
+        var chapterListString = substringBefore(
+            substringAfter(content, "vm.CHAPTERS = "), ";")
+            .trim();
+        chapterList = jsonDecode(chapterListString);
+        for (var chapter in chapterList){
+          var chapterData = Chapter.fromJson(chapter);
+          int totalPages = int.parse(chapterData.page); 
+
+          for (int i = 1; i <= totalPages; i++) {
+            String paddedContentIndex = contentData.contentIndex.toString().padLeft(4, '0');
+            String paddedPage = i.toString().padLeft(3, '0'); 
+            
+            var chapterURI = "https://$directory/manga/${contentData.itemID}/${paddedContentIndex}-${paddedPage}.png";
+
+            imageURIs.add(chapterURI);
           }
         }
+
       }
-    
+
       return imageURIs;
     } catch (e) {
       return ['Error: $e'];
@@ -206,43 +179,127 @@ class Mangasee extends ContentSource {
 
 
   @override
-  String fetchContentImageUrl(Document document) {
-    final imgElement = document.querySelector('img');
-    final src = imgElement?.attributes['src'];
-    if (src == null) {
-      return 'https://via.placeholder.com/150';
+  String fetchContentImageUrl(Document document, ContentData cardItem) {
+    if (cardItem.imageURI != ""){
+      return cardItem.imageURI;
     }
-
-    return src;
+    return "https://via.placeholder.com/150";
   }
 
   @override
-  String fetchContentAuthor(Document document) {
-    var author = "Author not found";
-    var authorElement = document.querySelector('[class*="mt-2 text-sm md:text-base opacity-80"]');
-    if (authorElement != null){
-      author = authorElement.text.trim();
+  String fetchContentAuthor(Document document, ContentData cardItem) {
+    if (cardItem.author != ""){
+      return cardItem.author;
     }
-    return author;
+    return "cardItem.author";
   }
 
   @override
-  List<String> fetchContentSummary(document) {
-    final summaryElement = document.querySelector('[class*="limit-html-p"]');
-    if (summaryElement == null) {
-      return ['Summary not found'];
+  List<String> fetchContentSummary(Document document, ContentData cardItem) {
+    var nodes = document.querySelectorAll('li.list-group-item div');
+
+    List<String> descriptions = [];
+    for (var node in nodes) {
+      if (node.previousElementSibling?.text == "Description:"){
+        descriptions.add(node.text);
+      }
     }
-    return [utf8.decode(latin1.encode(summaryElement.text))];
+
+    return descriptions;
   }
 
   @override
-  List<String> fetchContentGenre(Document document) {
+  List<String> fetchContentGenre(Document document, ContentData cardItem) {
+    var nodes = document.querySelectorAll('li.list-group-item a');
+
     List<String> genres = [];
-    var contentElementContainer = document.querySelector('[class*="flex items-center flex-wrap"]');
-    if (contentElementContainer != null){
-      var excludeGenreProp = contentElementContainer.text.trim().substring(7);
-      genres = excludeGenreProp.split(",");
+    for (var node in nodes) {
+      var text = node.parentNode?.text?.trim();
+      if (text != null && text.contains("Genre(s):")){
+        genres.add(node.text);
+      }
     }
     return genres;
+  }
+}
+
+
+class MangaData {
+  final String id;
+  final String series;
+  final String ongoing;
+  final String status;
+  final String type;
+  final String volume;
+  final String volumeId;
+  final String year;
+  final List<String> authors;
+  final List<String> altTitles;
+  final String lastUpdated;
+  final List<String> genres;
+  final bool hentai;
+
+  MangaData({
+    required this.id,
+    required this.series,
+    required this.ongoing,
+    required this.status,
+    required this.type,
+    required this.volume,
+    required this.volumeId,
+    required this.year,
+    required this.authors,
+    required this.altTitles,
+    required this.lastUpdated,
+    required this.genres,
+    required this.hentai,
+  });
+
+  factory MangaData.fromJson(dynamic json) {
+    if (json is String) {
+      json = jsonDecode(json);
+    }
+
+    return MangaData(
+      id: json['i'].toString(),
+      series: json['s'].toString(),
+      ongoing: json['o'].toString(),
+      status: json['ss'].toString(),
+      type: json['t'].toString(),
+      volume: json['v'].toString(),
+      volumeId: json['vm'].toString(),
+      year: json['y'].toString(),
+      authors: List<String>.from(json['a'] ?? []),
+      altTitles: List<String>.from(json['al'] ?? []),
+      lastUpdated: json['ls'].toString(),
+      genres: List<String>.from(json['g'] ?? []),
+      hentai: json['h'] ?? false,
+    );
+  }
+}
+
+class Chapter {
+  String chapter;
+  String type;
+  String date;
+  String chapterName;
+  String page;
+
+  Chapter({
+    required this.chapter,
+    required this.type,
+    required this.date,
+    required this.chapterName,
+    required this.page,
+  });
+
+  factory Chapter.fromJson(Map<String, dynamic> json) {
+    return Chapter(
+      chapter: json['Chapter'].toString(),
+      type: json['Type'].toString(),
+      date: json['Date'].toString(),
+      chapterName: json['ChapterName'].toString(),
+      page: json['Page'].toString(),
+    );
   }
 }

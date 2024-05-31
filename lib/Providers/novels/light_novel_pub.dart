@@ -120,9 +120,9 @@ class LightNovelPub extends ContentSource {
 
       // Fix the ordering
       cardItem.contentList.sort((a, b) {
-        double chapterNoA = double.tryParse(a.chapterNo) ?? a.contentIndex.toDouble();
-        double chapterNoB = double.tryParse(b.chapterNo) ?? b.contentIndex.toDouble();
-        return chapterNoA.compareTo(chapterNoB);
+        double itemIDA = double.tryParse(a.itemID) ?? a.contentIndex.toDouble();
+        double itemIDB = double.tryParse(b.itemID) ?? b.contentIndex.toDouble();
+        return itemIDA.compareTo(itemIDB);
       });
 
       return cardItem.contentList;
@@ -139,14 +139,14 @@ class LightNovelPub extends ContentSource {
         List<Element> paragraphElements = contentElementContainer.getElementsByTagName('a');
         for (var paraElement in paragraphElements) {
           final partialURI = paraElement.attributes['href'] ?? '';
-          final chapterNoFuture = Future(() => paraElement.querySelector('[class*="chapter-no"]')?.text.trim() ?? '');
+          final itemIDFuture = Future(() => paraElement.querySelector('[class*="chapter-no"]')?.text.trim() ?? '');
           final chapterTitleFuture = Future(() => paraElement.querySelector('[class*="chapter-title"]')?.text.trim() ?? '');
           final lastUpdatedFuture = Future(() => paraElement.querySelector('[class*="chapter-update"]'));
 
           // Wait for all Futures to complete
-          var results = await Future.wait([chapterNoFuture, chapterTitleFuture, lastUpdatedFuture]);
+          var results = await Future.wait([itemIDFuture, chapterTitleFuture, lastUpdatedFuture]);
 
-          String chapterNo = results[0] as String;
+          String itemID = results[0] as String;
           String chapterTitle = results[1] as String;
           Element lastUpdated = results[2] as Element;
 
@@ -162,7 +162,7 @@ class LightNovelPub extends ContentSource {
             var fetchedData= ContentData.empty();
             fetchedData.contentURI = contentURI;
             fetchedData.title = chapterTitle;
-            fetchedData.chapterNo = chapterNo;
+            fetchedData.itemID = itemID;
             fetchedData.lastUpdated = lastUpdatedDatetime;
             fetchedData.contentIndex = cardItem.contentList.length+1;
             fetchedData.contentType = contentType;
@@ -241,7 +241,7 @@ class LightNovelPub extends ContentSource {
 
 
   @override
-  String fetchContentImageUrl(Document document) {
+  String fetchContentImageUrl(Document document, ContentData cardItem) {
     final summaryElement = document.querySelector('[class*="cover"]');
     if (summaryElement == null) {
       return 'https://via.placeholder.com/150';
@@ -256,7 +256,7 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  String fetchContentAuthor(Document document) {
+  String fetchContentAuthor(Document document, ContentData cardItem) {
     final authorElement = document.querySelector('[itemprop*="author"]');
     if (authorElement == null || authorElement.text.trim().isEmpty) {
       return 'Author not found';
@@ -265,7 +265,7 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  List<String> fetchContentSummary(document) {
+  List<String> fetchContentSummary(document, ContentData cardItem) {
     final summaryElement = document.querySelector('[class*="summary"]');
     if (summaryElement == null) {
       return ['Summary not found'];
@@ -276,7 +276,7 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  List<String> fetchContentGenre(Document document) {
+  List<String> fetchContentGenre(Document document, ContentData cardItem) {
     final genreElement = document.querySelector('[class*="categories"]');
     if (genreElement == null) {
       return ['Genre not found'];

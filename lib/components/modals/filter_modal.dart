@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:luna/bases/luna_base_modal.dart';
 
 class FiltersModal extends StatefulWidget {
-  final List<String> filters;
-  final ValueChanged<Map<String, bool>> onFiltersChanged;
+  final List<String> options;
+  final ValueChanged<Map<String, dynamic>> onOptionsChanged;
 
   FiltersModal({
-    required this.filters,
-    required this.onFiltersChanged,
+    required this.options,
+    required this.onOptionsChanged,
   });
 
   @override
@@ -14,135 +16,90 @@ class FiltersModal extends StatefulWidget {
 }
 
 class _FiltersModalState extends State<FiltersModal> {
-  late Map<String, bool> _filtersState;
-  late bool _selectAll;
+  late Map<String, dynamic> _optionsState;
+  bool _allOptions = false;
+  late SharedPreferences _prefs;
 
   @override
   void initState() {
     super.initState();
-    _initializeFiltersState();
+    _initializeOptionsState();
+    _loadSavedOptions();
   }
 
-  void _initializeFiltersState() {
-    _filtersState = {for (var filter in widget.filters) filter: false};
-    _selectAll = false;
+  void _initializeOptionsState() {
+    _optionsState = {for (var option in widget.options) option: false};
   }
 
-  void _onDone(bool value) {
-    widget.onFiltersChanged(_filtersState);
-  }
-
-  void _toggleSelectAll(bool? value) {
+  void _loadSavedOptions() async {
+    _prefs = await SharedPreferences.getInstance();
     setState(() {
-      _selectAll = value ?? false;
-      _filtersState.forEach((key, _) {
-        _filtersState[key] = value ?? false;
-      });
+      for (var option in widget.options) {
+        _optionsState[option] = _prefs.getBool(option) ?? false;
+      }
+      _allOptions = _optionsState.values.every((value) => value);
     });
+  }
+
+  void _saveOptionsState() {
+    for (var entry in _optionsState.entries) {
+      _prefs.setBool(entry.key, entry.value);
+    }
+  }
+
+  void _toggleAllOptions(bool value) {
+    setState(() {
+      _allOptions = value;
+      _optionsState.updateAll((key, _) => value);
+      _saveOptionsState();
+      widget.onOptionsChanged(_optionsState);
+    });
+  }
+
+  List<Widget> _buildContent() {
+    final theme = Theme.of(context);
+    return [
+      ListTile(
+        leading: Icon(Icons.select_all, color: theme.primaryColor),
+        title: Text(
+          'Default/All Options',
+          style: theme.textTheme.titleMedium?.copyWith(color: theme.textTheme.bodyLarge?.color),
+        ),
+        trailing: Switch(
+          value: _allOptions,
+          onChanged: _toggleAllOptions,
+        ),
+      ),
+      ...widget.options.map((option) {
+        return CheckboxListTile(
+          controlAffinity: ListTileControlAffinity.trailing,
+          title: Text(
+            option,
+            style: theme.textTheme.titleMedium?.copyWith(color: theme.textTheme.bodyLarge?.color),
+          ),
+          value: _optionsState[option],
+          onChanged: (value) {
+            setState(() {
+              _optionsState[option] = value;
+              _saveOptionsState();
+              _allOptions = _optionsState.values.every((value) => value);
+              widget.onOptionsChanged(_optionsState);
+            });
+          },
+        );
+      }).toList(),
+    ];
+  }
+
+  void _onModalDismissed() {
+    widget.onOptionsChanged(_optionsState);
   }
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      onPopInvoked: (bool value) {
-        _onDone(value);
-      },
-      child: DraggableScrollableSheet(
-        expand: false,
-        builder: _buildModalContent,
-      ),
-    );
-  }
-
-  Widget _buildModalContent(BuildContext context, ScrollController scrollController) {
-    return Container(
-      decoration: _buildContainerDecoration(),
-      child: Column(
-        children: [
-          _buildDivider(),
-          _buildSelectAllCheckbox(),
-          _buildOptionsList(scrollController)
-          
-        ],
-      ),
-    );
-  }
-
-  BoxDecoration _buildContainerDecoration() {
-    final theme = Theme.of(context);
-    return BoxDecoration(
-      color: theme.colorScheme.background,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20.0)),
-      boxShadow: const [
-        BoxShadow(
-          color: Colors.black26,
-          blurRadius: 10.0,
-          spreadRadius: 0.5,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSelectAllCheckbox() {
-    return CheckboxListTile(
-      title: Text(
-        'Select All',
-        style: _buildTitleStyle(),
-      ),
-      value: _selectAll,
-      onChanged: _toggleSelectAll,
-    );
-  }
-
-  TextStyle _buildTitleStyle() {
-    final theme = Theme.of(context);
-    return theme.textTheme.titleMedium?.copyWith(color: theme.textTheme.bodyLarge?.color) ?? const TextStyle();
-  }
-
-  Widget _buildOptionsList(ScrollController scrollController) {
-    return Expanded(
-      child: ListView(
-        controller: scrollController,
-        children: widget.filters.map((filter) {
-          return _buildFilterOption(
-            title: filter,
-            value: _filtersState[filter]!,
-            onChanged: (value) {
-              setState(() {
-                _filtersState[filter] = value ?? false;
-              });
-            },
-            color: Theme.of(context).colorScheme.secondary,
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildFilterOption({required String title, required bool value, required ValueChanged<bool?> onChanged, required Color color}) {
-    final theme = Theme.of(context);
-    return ListTile(
-      title: Text(
-        title,
-        style: theme.textTheme.titleMedium?.copyWith(color: theme.textTheme.bodyLarge?.color),
-      ),
-      trailing: Checkbox(
-        value: value,
-        onChanged: onChanged,
-        activeColor: color,
-      ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Container(
-      width: 50,
-      height: 5,
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: Theme.of(context).dividerColor,
-        borderRadius: BorderRadius.circular(5),
-      ),
+    return BaseModal(
+      content: _buildContent(),
+      onDismissed: _onModalDismissed,
     );
   }
 }

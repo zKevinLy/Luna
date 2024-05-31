@@ -97,6 +97,29 @@ class Batoto extends ContentSource {
   }
 
   @override
+  List<String> fetchBrowseGenreList()  {
+    List<String> genres = [
+      'Artbook', 'Cartoon', 'Comic', 'Doujinshi', 'Imageset', 'Manga', 'Manhua', 'Manhwa', 'Webtoon', 'Western', 
+      '4-Koma', 'Oneshot', 'Shoujo(G)', 'Shounen(B)', 'Josei(W)', 'Seinen(M)', 'Yuri(GL)', 'Yaoi (BL)', 'Bara(ML)', 
+      'Kodomo(Kid)', 'Silver & Golden', 'Non-human', 'Gore', 'Bloody', 'Violence', 'Ecchi', 'Adult', 'Mature', 
+      'Smut', 'Hentai', 'Action', 'Boys', 'Adaptation', 'Adventure', 'Age Gap', 'Aliens', 'Animals', 'Cars', 
+      'Cheating/Infidelity', 'Childhood Friends', 'College life', 'Comedy', 'Anthology', 'Contest winning', 
+      'Crossdressing', 'Delinquents', 'Dementia', 'Demons', 'Drama', 'Dungeons', 'Fetish', 'Full Color', 'Game', 
+      'Gender Bender', 'Genderswap', 'Ghosts', 'Emperor\'s daughter', 'Girls', 'Fantasy', 'Gyaru', 'Harlequin', 
+      'Historical', 'Horror', 'Incest', 'Isekai', 'Kids', 'Magic', 'Mecha', 'Medical', 'Military', 'Monster Girls', 
+      'Monsters', 'Music', 'Mystery', 'Netorare/NTR', 'Office Workers', 'Reverse Harem', 'Shoujo ai', 'Supernatural', 
+      'Villainess', 'Revenge', 'Omegaverse', 'Parody', 'Philosophical', 'Police', 'Reverse Isekai', 'Romance', 
+      'Royal family', 'Post-Apocalyptic', 'Royalty', 'Psychological', 'Regression', 'Samurai', 'School Life', 
+      'Shounen ai', 'Showbiz', 'Slice of Life', 'SM/BDSM/SUB-DOM', 'Space', 'Sports', 'Survival', 'Thriller', 
+      'Time Travel', 'Video Games', 'Virtual Reality', 'Wuxia', 'Tower Climbing', 'Xianxia', 'Traditional Games', 
+      'Tragedy', 'Xuanhuan', 'Yakuzas', 'Beasts', 'Cooking', 'Magical Girls', 'Super Power', 'Transmigration', 
+      'Zombies', 'Bodyswap', 'Crime', 'Fan-Colored', 'Harem', 'Martial Arts', 'Ninja', 'Reincarnation', 'Sci-Fi', 
+      'Superhero', 'Vampires'
+    ];
+    return genres;
+  }
+
+  @override
   Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
     try {
       // Fetch the first page to get totalChapters
@@ -107,9 +130,9 @@ class Batoto extends ContentSource {
 
       // Fix the ordering
       cardItem.contentList.sort((a, b) {
-        double chapterNoA = double.tryParse(a.chapterNo) ?? a.contentIndex.toDouble();
-        double chapterNoB = double.tryParse(b.chapterNo) ?? b.contentIndex.toDouble();
-        return chapterNoA.compareTo(chapterNoB);
+        double itemIDA = double.tryParse(a.itemID) ?? a.contentIndex.toDouble();
+        double itemIDB = double.tryParse(b.itemID) ?? b.contentIndex.toDouble();
+        return itemIDA.compareTo(itemIDB);
       });
 
 
@@ -138,9 +161,9 @@ class Batoto extends ContentSource {
           var chapterTitleElement = divElement.querySelector('[class*="space-x-1"]');
           final timeElement = divElement.getElementsByTagName('time');
 
-          var chapterNo = "Undefined";
+          var itemID = "Undefined";
           if (chapterTitleElement!= null){
-            chapterNo = chapterTitleElement.text.trim();
+            itemID = chapterTitleElement.text.trim();
           }
           var title = partialElement[0].text.trim();
           final partialURI = partialElement[0].attributes['href'] as String;
@@ -154,7 +177,7 @@ class Batoto extends ContentSource {
           var fetchedData= ContentData.empty();
           fetchedData.contentURI = "$baseURI$partialURI";
           fetchedData.title = title;
-          fetchedData.chapterNo = chapterNo;
+          fetchedData.itemID = itemID;
           fetchedData.lastUpdated = lastUpdated;
           fetchedData.contentIndex = cardItem.contentList.length+1;
           fetchedData.contentType = contentType;
@@ -206,7 +229,7 @@ class Batoto extends ContentSource {
 
 
   @override
-  String fetchContentImageUrl(Document document) {
+  String fetchContentImageUrl(Document document, ContentData cardItem) {
     final imgElement = document.querySelector('img');
     final src = imgElement?.attributes['src'];
     if (src == null) {
@@ -217,7 +240,7 @@ class Batoto extends ContentSource {
   }
 
   @override
-  String fetchContentAuthor(Document document) {
+  String fetchContentAuthor(Document document, ContentData cardItem) {
     var author = "Author not found";
     var authorElement = document.querySelector('[class*="mt-2 text-sm md:text-base opacity-80"]');
     if (authorElement != null){
@@ -227,7 +250,7 @@ class Batoto extends ContentSource {
   }
 
   @override
-  List<String> fetchContentSummary(document) {
+  List<String> fetchContentSummary(document, ContentData cardItem) {
     final summaryElement = document.querySelector('[class*="limit-html-p"]');
     if (summaryElement == null) {
       return ['Summary not found'];
@@ -236,7 +259,7 @@ class Batoto extends ContentSource {
   }
 
   @override
-  List<String> fetchContentGenre(Document document) {
+  List<String> fetchContentGenre(Document document, ContentData cardItem) {
     List<String> genres = [];
     var contentElementContainer = document.querySelector('[class*="flex items-center flex-wrap"]');
     if (contentElementContainer != null){

@@ -28,8 +28,11 @@ class ContentData extends BaseContent{
 
   String title;
   String author;
-  String chapterNo;
+  String status;
+  String year;
+  String itemID;
   String lastUpdated;
+  bool nsfw;
 
   List<String> summary;
   List<String> genre;
@@ -42,8 +45,11 @@ class ContentData extends BaseContent{
     
     required this.title,
     required this.author,
-    required this.chapterNo,
+    required this.status,
+    required this.year,
+    required this.itemID,
     required this.lastUpdated,
+    required this.nsfw,
 
     required this.summary,
     required this.genre,
@@ -64,16 +70,23 @@ class ContentData extends BaseContent{
       imageURI: '',
       contentURI: '',
       websiteURI: '',
+
       title: '',
       author: '',
-      chapterNo: '',
+      status: '',
+      year: '',
+      itemID: '',
       lastUpdated: '',
+      nsfw: false,
+
       summary: [],
       genre: [],
       contentList: [],
+
       contentIndex: 0,
       contentType: '',
       contentSource: '',
+
       visible: true,
       viewed: false,
       viewedAmount: 0,

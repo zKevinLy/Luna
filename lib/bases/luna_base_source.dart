@@ -21,10 +21,10 @@ abstract class ContentSource {
       final document = parse(response.body);
 
       // Fetch details concurrently using compute for parallel processing
-      final imageURIFuture = compute(fetchContentImageUrl, document);
-      final authorFuture = compute(fetchContentAuthor, document);
-      final summaryFuture = compute(fetchContentSummary, document);
-      final genreFuture = compute(fetchContentGenre, document);
+      final imageURIFuture = compute(_fetchContentImageUrl, [document, cardItem]);
+      final authorFuture = compute(_fetchContentAuthor, [document, cardItem]);
+      final summaryFuture = compute(_fetchContentSummary, [document, cardItem]);
+      final genreFuture = compute(_fetchContentGenre, [document, cardItem]);
       final contentListFuture = fetchContentList(document, cardItem);
 
       // Wait for all futures to complete
@@ -60,8 +60,9 @@ abstract class ContentSource {
     return [];
   }
 
-  Future<List<String>> fetchBrowseGenreList() async {
+  List<String> fetchBrowseGenreList() {
     // Implement this method in the derived class
+    // Since Genres are unlikely to change, just hard code it.
     return [];
   }
 
@@ -84,24 +85,57 @@ abstract class ContentSource {
     return <String, String>{};
   }
 
-  String fetchContentImageUrl(Document document) {
+  String fetchContentImageUrl(Document document, ContentData cardItem) {
     // Implement this method in the derived class
     return 'https://via.placeholder.com/150';
   }
 
-  String fetchContentAuthor(Document document) {
+  String fetchContentAuthor(Document document, ContentData cardItem) {
     // Implement this method in the derived class
     return "Author not found";
   }
   
-  List<String> fetchContentSummary(Document document) {
+  List<String> fetchContentSummary(Document document, ContentData cardItem) {
     // Implement this method in the derived class
     return ['Summary not found'];
   }
 
-  List<String> fetchContentGenre(Document document) {
+  List<String> fetchContentGenre(Document document, ContentData cardItem) {
     // Implement this method in the derived class
     return ['Tags not found'];
+  }
+
+  String _fetchContentImageUrl(List<dynamic> args) {
+    Document document = args[0];
+    ContentData cardItem = args[1];
+    return fetchContentImageUrl(document, cardItem);
+  }
+
+  String _fetchContentAuthor(List<dynamic> args) {
+    Document document = args[0];
+    ContentData cardItem = args[1];
+    return fetchContentAuthor(document, cardItem);
+  }
+
+  List<String> _fetchContentSummary(List<dynamic> args) {
+    Document document = args[0];
+    ContentData cardItem = args[1];
+    return fetchContentSummary(document, cardItem);
+  }
+  List<String> _fetchContentGenre(List<dynamic> args) {
+    Document document = args[0];
+    ContentData cardItem = args[1];
+    return fetchContentGenre(document, cardItem);
+  }
+
+  String substringBefore(String source, String delimiter) {
+    final index = source.indexOf(delimiter);
+    return index == -1 ? source : source.substring(0, index);
+  }
+  
+  String substringAfter(String source, String delimiter) {
+    final index = source.indexOf(delimiter);
+    return index == -1 ? '' : source.substring(index + delimiter.length);
   }
 
 }

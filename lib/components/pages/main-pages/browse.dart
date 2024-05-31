@@ -14,7 +14,16 @@ class BrowsePage extends StatefulWidget {
 
 class _BrowsePageState extends State<BrowsePage> {
   String selectedTab = "";
+  Map<String, dynamic> selectedSources = {};
   List<String> tabNames = ["Anime", "Manga", "Novel", "Movie", "TV Shows"];
+  Map<String, List<String>> tabSources = {
+    "anime": [],
+    "manga": ["batoto", "mangasee"],
+    "novel": ["light_novel_pub"],
+    "movie": [],
+    "tvshows": []
+  };
+
   List<ContentData> cardItems = [];
   List<ContentData> searchResults = []; // Variable to hold search results
   bool _isSearching = false;
@@ -102,11 +111,14 @@ class _BrowsePageState extends State<BrowsePage> {
     if (_isSearching) {
       return _buildGridView(context, searchResults);
     } else {
-      var tabNameLower = tabName.toLowerCase();
-      switch (tabName) {
-        case 'Manga':
-        case 'Novel':
-          return _buildSubPage(tabType: tabNameLower);
+      var tabNameLower = tabName.toLowerCase().replaceAll(" ", "");
+      switch (tabNameLower) {
+        case 'manga':
+        case 'novel':
+          if (selectedTab == tabNameLower){
+            return _buildSubPage(tabType: tabNameLower);
+          }
+          return Container();
         default:
           return Center(child: Text('$tabNameLower Content'));
       }
@@ -115,7 +127,7 @@ class _BrowsePageState extends State<BrowsePage> {
 
   Widget _buildSubPage({required String tabType}) {
     return FutureBuilder<List<ContentData>>(
-      future: fetchBrowseList(tabType, [1]),
+      future: fetchBrowseList(tabType, [1], selectedSources: selectedSources),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -208,43 +220,41 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   void _onFilterPressed() {
+    List<String> options = fetchBrowseGenreList(selectedTab); 
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => FiltersModal(
-        filters: ['Filter 1', 'Filter 2', 'Filter 3'], // Define your filters here
-        onFiltersChanged: (updatedFilters) {
-          // Handle the updated filters here
-          print(updatedFilters);
+        options: options,
+        onOptionsChanged: (selectedSources) {
+          // Handle the updated options here
+          // print(updatedOptions);
         },
       ),
     );
   }
 
   void _onSettingsPressed() {
-    List<String> options = ['Option 1', 'Option 2', 'Option 3']; // Define your options here
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => SettingsModal(
-        options: options,
-        onOptionsChanged: (updatedOptions) {
-          // Handle the updated options here
-          print(updatedOptions);
+        options: tabSources[selectedTab] ?? [], 
+        onOptionsChanged: (selected) async {
+          selectedSources = selected;
+          setState(() {});
         },
       ),
     );
   }
 
+
+
   void _onSearchSubmitted(String query) async {
     searchResults = await fetchSearch(selectedTab, [1], query);
-    print("Search Results:");
-    for (var result in searchResults) {
-      print("Title: ${result.title}, Image URI: ${result.imageURI}");
-    }
     setState(() {});
   }
 
