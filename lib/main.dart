@@ -21,11 +21,11 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData.dark(),
       home: const MainLayout(
         pages: {
-          'home':       {'page': BrowsePage(),      'icon': Icons.home}, 
+          'home':       {'page': BrowsePage(), 'icon': Icons.home}, 
           'favorites':  {'page': BrowsePage(), 'icon': Icons.favorite}, 
-          'browse':     {'page': BrowsePage(),    'icon': Icons.search}, 
-          'history':    {'page': BrowsePage(),   'icon': Icons.history}, 
-          'settings':   {'page': BrowsePage(),  'icon': Icons.settings}, 
+          'browse':     {'page': BrowsePage(), 'icon': Icons.search}, 
+          'history':    {'page': BrowsePage(), 'icon': Icons.history}, 
+          'settings':   {'page': BrowsePage(), 'icon': Icons.settings}, 
         },
       ),
     );

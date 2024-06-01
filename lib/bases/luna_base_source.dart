@@ -8,12 +8,21 @@ abstract class ContentSource {
   final String contentType;
   final String contentSource;
   final String baseURI;
+  String faviconURI = "";
 
   ContentSource({
     required this.contentType,
     required this.contentSource,
-    required this.baseURI
-  });
+    required this.baseURI,
+  }) {
+    () async {
+      faviconURI = await fetchFaviconURI();
+    }();
+  }
+
+  Future<String> fetchFaviconURI() async {
+    return "";
+  }
 
   Future<ContentData> fetchContentDetails(ContentData cardItem) async {
     try {
@@ -21,11 +30,11 @@ abstract class ContentSource {
       final document = parse(response.body);
 
       // Fetch details concurrently using compute for parallel processing
-      final imageURIFuture = compute(_fetchContentImageUrl, [document, cardItem]);
-      final authorFuture = compute(_fetchContentAuthor, [document, cardItem]);
-      final summaryFuture = compute(_fetchContentSummary, [document, cardItem]);
-      final genreFuture = compute(_fetchContentGenre, [document, cardItem]);
-      final contentListFuture = fetchContentList(document, cardItem);
+      final imageURIFuture = compute(_fetchContentImageUrl, [cardItem, document]);
+      final authorFuture = compute(_fetchContentAuthor, [cardItem, document]);
+      final summaryFuture = compute(_fetchContentSummary, [cardItem, document]);
+      final genreFuture = compute(_fetchContentGenre, [cardItem, document]);
+      final contentListFuture = fetchContentList(cardItem, document);
 
       // Wait for all futures to complete
       final results = await Future.wait([
@@ -50,10 +59,6 @@ abstract class ContentSource {
     }
   }
 
-  Future<List<ContentData>> fetchSearch(List<ContentData> cardItems, List<int> pageNumbers, List<String> genreList, {String searchTerm = "_any"}) async {
-    // Implement this method in the derived class
-    return [];
-  }
 
   Future<List<ContentData>> fetchBrowseList(List<int> pageNumbers, {String genre = 'all', String orderBy = 'new', String status = 'all'}) async {
     // Implement this method in the derived class
@@ -66,82 +71,67 @@ abstract class ContentSource {
     return [];
   }
 
-  Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
+  Future<List<ContentData>> fetchContentList(ContentData cardItem, Document document) async {
     // Implement this method in the derived class
     return [];
   }
 
-  Future<List<String>> fetchContentItem(ContentData contentData) async {
+  Future<void> fetchContentItem(ContentData cardItem, ContentData contentData) async {
     // Implement this method in the derived class
     // This should return the list of strings representing either the result, or URL to the source content
-    return [];
+    return;
   }
 
   // Miscellaneous header info that may not exist on all content types
-  Future<Map<String, String>> extractHeaderInfo(Document document, ContentData cardItem) async {
+  Future<Map<String, String>> extractHeaderInfo(ContentData cardItem, Document document) async {
     // Implement this method in the derived class
     // The header may have other information like the Author, summary, etc.. 
     //    so we can set it directly to the cardItem
     return <String, String>{};
   }
 
-  String fetchContentImageUrl(Document document, ContentData cardItem) {
+  String fetchContentImageUrl(ContentData cardItem, Document document) {
     // Implement this method in the derived class
     return 'https://via.placeholder.com/150';
   }
 
-  String fetchContentAuthor(Document document, ContentData cardItem) {
+  String fetchContentAuthor(ContentData cardItem, Document document) {
     // Implement this method in the derived class
     return "Author not found";
   }
   
-  List<String> fetchContentSummary(Document document, ContentData cardItem) {
+  List<String> fetchContentSummary(ContentData cardItem, Document document) {
     // Implement this method in the derived class
     return ['Summary not found'];
   }
 
-  List<String> fetchContentGenre(Document document, ContentData cardItem) {
+  List<String> fetchContentGenre(ContentData cardItem, Document document) {
     // Implement this method in the derived class
     return ['Tags not found'];
   }
 
   String _fetchContentImageUrl(List<dynamic> args) {
-    Document document = args[0];
-    ContentData cardItem = args[1];
-    return fetchContentImageUrl(document, cardItem);
+    Document document = args[1];
+    ContentData cardItem = args[0];
+    return fetchContentImageUrl(cardItem, document);
   }
 
   String _fetchContentAuthor(List<dynamic> args) {
-    Document document = args[0];
-    ContentData cardItem = args[1];
-    return fetchContentAuthor(document, cardItem);
+    Document document = args[1];
+    ContentData cardItem = args[0];
+    return fetchContentAuthor(cardItem, document);
   }
 
   List<String> _fetchContentSummary(List<dynamic> args) {
-    Document document = args[0];
-    ContentData cardItem = args[1];
-    return fetchContentSummary(document, cardItem);
+    Document document = args[1];
+    ContentData cardItem = args[0];
+    return fetchContentSummary(cardItem, document);
   }
+
   List<String> _fetchContentGenre(List<dynamic> args) {
-    Document document = args[0];
-    ContentData cardItem = args[1];
-    return fetchContentGenre(document, cardItem);
+    Document document = args[1];
+    ContentData cardItem = args[0];
+    return fetchContentGenre(cardItem, document);
   }
 
-
-
-
-  String substringBefore(String source, String delimiter) {
-    final index = source.indexOf(delimiter);
-    return index == -1 ? source : source.substring(0, index);
-  }
-  
-  String substringAfter(String source, String delimiter) {
-    final index = source.indexOf(delimiter);
-    return index == -1 ? '' : source.substring(index + delimiter.length);
-  }
-  
-  String sanitize(String input) {
-    return input.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-  }
 }

@@ -151,7 +151,7 @@ class ContentLayout extends StatelessWidget {
 
   void _handleTileTap(BuildContext context, ContentData contentData, int currentIndex, ContentData parentContentData) {
     // Fetch content item asynchronously
-    fetchContentItem(cardItem, contentData).then((contentItems) {
+    fetchContentItem(cardItem, contentData).then((e) {
       // Determine the appropriate viewer based on content type
       switch (contentData.contentType) {
         case 'text':
@@ -160,7 +160,7 @@ class ContentLayout extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) => TextViewer(
                 contentData: contentData,
-                contentItems: contentItems,
+                contentItems: contentData.contentList.cast<String>(),
                 currentIndex: currentIndex,
                 cardItem: parentContentData,
               ),
@@ -173,7 +173,7 @@ class ContentLayout extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) => ImageViewer(
                 contentData: contentData,
-                contentItems: contentItems,
+                contentItems: contentData.contentList.cast<String>(),
                 currentIndex: currentIndex,
                 cardItem: parentContentData,
               ),
@@ -184,7 +184,7 @@ class ContentLayout extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => VideoViewer(contentData: contentData, contentItems: contentItems),
+              builder: (context) => VideoViewer(contentData: contentData, contentItems: contentData.contentList.cast<String>()),
             ),
           );
           break;

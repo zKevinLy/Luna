@@ -36,7 +36,7 @@ class ContentData extends BaseContent{
 
   List<String> summary;
   List<String> genre;
-  List<ContentData> contentList;
+  List<dynamic> contentList;
 
   ContentData({
     required this.imageURI,

@@ -1,42 +1,46 @@
-
 import 'package:luna/Providers/manga/mangasee.dart';
 import 'package:luna/models/content_info.dart';
 import 'package:luna/Providers/novels/light_novel_pub.dart';
 import 'package:luna/Providers/manga/batoto.dart';
+import 'package:luna/utils/text_parser.dart';
 
-Future<List<String>> fetchContentItem(ContentData cardItem, ContentData contentData) async {
+// Create singleton instances of your provider classes
+final LightNovelPub _lightNovelPub = LightNovelPub();
+final Batoto _batoto = Batoto();
+final Mangasee _mangasee = Mangasee();
+
+Future<void> fetchContentItem(ContentData cardItem, ContentData contentData) async {
   switch (cardItem.contentSource) {
     case 'light_novel_pub':
-      return await LightNovelPub().fetchContentItem(contentData);
-    case 'bato_to':
-      return await Batoto().fetchContentItem(contentData);
+      return await _lightNovelPub.fetchContentItem(cardItem, contentData);
+    case 'batoto':
+      return await _batoto.fetchContentItem(cardItem, contentData);
     case 'mangasee':
-      return await Mangasee().fetchContentItem(contentData);
+      return await _mangasee.fetchContentItem(cardItem, contentData);
   }
-  return [];
 }
 
 Future<ContentData> fetchContentDetails(ContentData cardItem) async {
   switch (cardItem.contentSource) {
     case 'light_novel_pub':
-      return await LightNovelPub().fetchContentDetails(cardItem);
-    case 'bato_to':
-      return await Batoto().fetchContentDetails(cardItem);
+      return await _lightNovelPub.fetchContentDetails(cardItem);
+    case 'batoto':
+      return await _batoto.fetchContentDetails(cardItem);
     case 'mangasee':
-      return await Mangasee().fetchContentDetails(cardItem);
+      return await _mangasee.fetchContentDetails(cardItem);
   }
   return ContentData.empty();
 }
 
-Future<List<ContentData>> fetchBrowseList(String tabType, List<int> pageNumbers, List<String> sourceList, {String searchTerm = ""}) async {
+Future<List<ContentData>> fetchBrowseList(String tabName, List<int> pageNumbers, List<String> sourceList, {String searchTerm = ""}) async {
   List<ContentData> results = [];
   if (sourceList.isEmpty) {
-    switch (tabType) {
+    switch (sanitize(tabName)) {
       case 'novel':
-        results.addAll(await LightNovelPub().fetchBrowseList(pageNumbers));
+        results.addAll(await _lightNovelPub.fetchBrowseList(pageNumbers));
         break;
       case 'manga':
-        results.addAll(await Mangasee().fetchBrowseList(pageNumbers));
+        results.addAll(await _mangasee.fetchBrowseList(pageNumbers));
         break;
     }
   }
@@ -44,13 +48,13 @@ Future<List<ContentData>> fetchBrowseList(String tabType, List<int> pageNumbers,
   for (var entry in sourceList) {
     switch (entry) {
       case 'light_novel_pub':
-        results.addAll(await LightNovelPub().fetchBrowseList(pageNumbers));
+        results.addAll(await _lightNovelPub.fetchBrowseList(pageNumbers));
         break;
       case 'batoto':
-        results.addAll(await Batoto().fetchBrowseList(pageNumbers));
+        results.addAll(await _batoto.fetchBrowseList(pageNumbers));
         break;
       case 'mangasee':
-        results.addAll(await Mangasee().fetchBrowseList(pageNumbers));
+        results.addAll(await _mangasee.fetchBrowseList(pageNumbers));
         break;
     }
   }
@@ -58,12 +62,11 @@ Future<List<ContentData>> fetchBrowseList(String tabType, List<int> pageNumbers,
   return results;
 }
 
-
-Future<List<String>> fetchBrowseGenreList(String tabType, {Map<String, dynamic> selectedSources = const {}}) async {
+Future<List<String>> fetchBrowseGenreList(String tabName, {Map<String, dynamic> selectedSources = const {}}) async {
   if (!selectedSources.containsValue(true)){
-    switch (tabType) {
+    switch (sanitize(tabName)) {
       case 'manga':
-        return Mangasee().fetchBrowseGenreList();
+        return _mangasee.fetchBrowseGenreList();
     }
   }
 
@@ -73,24 +76,24 @@ Future<List<String>> fetchBrowseGenreList(String tabType, {Map<String, dynamic> 
     }
     switch (entry.key) {
       case 'batoto':
-        return Batoto().fetchBrowseGenreList();
+        return _batoto.fetchBrowseGenreList();
       case 'mangasee':
-        return Mangasee().fetchBrowseGenreList();
+        return _mangasee.fetchBrowseGenreList();
     }
   }
   return [];
 }
 
-Future<List<ContentData>> fetchSearch(List<ContentData> cardItems, String tabType, List<int> pageNumbers, List<String> genreList, List<String> sourceList, {String searchTerm = "_any"}) async {
+Future<List<ContentData>> fetchSearch(List<ContentData> cardItems, String tabName, List<int> pageNumbers, List<String> genreList, List<String> sourceList, {String searchTerm = "_any"}) async {
   List<ContentData> results = [];
   if (sourceList.isEmpty){
-    switch (tabType) {
+    switch (sanitize(tabName)) {
       case 'novel':
-        results.addAll(await LightNovelPub().fetchBrowseList(pageNumbers));
+        results.addAll(await _lightNovelPub.fetchBrowseList(pageNumbers));
         break;
       case 'manga':
-        // since mangasee returns everything on initial call to fetchBrowseList, we can serch within our carditems
-        results.addAll(await Mangasee().fetchSearch(cardItems, pageNumbers, genreList, searchTerm: searchTerm));
+        // since mangasee returns everything on initial call to fetchBrowseList, we can search within our card items
+        results.addAll(await _mangasee.fetchSearch(cardItems, pageNumbers, genreList, searchTerm: searchTerm));
         break;
     }
   }
@@ -98,14 +101,14 @@ Future<List<ContentData>> fetchSearch(List<ContentData> cardItems, String tabTyp
   for (var entry in sourceList) {
     switch (entry) {
       case 'light_novel_pub':
-        results.addAll(await LightNovelPub().fetchBrowseList(pageNumbers));
+        results.addAll(await _lightNovelPub.fetchBrowseList(pageNumbers));
         break;
       case 'batoto':
-        results.addAll(await Batoto().fetchBrowseList(pageNumbers, searchTerm: searchTerm));
+        results.addAll(await _batoto.fetchBrowseList(pageNumbers, searchTerm: searchTerm));
         break;
       case 'mangasee':
-        // since mangasee returns everything on initial call to fetchBrowseList, we can serch within our carditems
-        results.addAll(await Mangasee().fetchSearch(cardItems, pageNumbers, genreList, searchTerm: searchTerm));
+        // since mangasee returns everything on initial call to fetchBrowseList, we can search within our card items
+        results.addAll(await _mangasee.fetchSearch(cardItems, pageNumbers, genreList, searchTerm: searchTerm));
         break;
     }
   }

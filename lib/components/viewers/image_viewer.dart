@@ -59,10 +59,9 @@ class _ImageViewerState extends State<ImageViewer> {
       _currentContentData = widget.cardItem.contentList[_currentIndex];
 
       // Fetch new content items asynchronously
-      final newContentItems = await fetchContentItem(widget.cardItem, _currentContentData);
+      await fetchContentItem(widget.cardItem, _currentContentData);
 
       setState(() {
-        _contentItems.addAll(newContentItems);
         _isLoading = false;
       });
     }

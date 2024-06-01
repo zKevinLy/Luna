@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:luna/components/modals/filter_modal.dart';
 import 'package:luna/components/pages/content_layout.dart';
+import 'package:luna/models/page_info.dart';
 import 'package:luna/models/content_info.dart';
 import 'package:luna/Providers/fetch_content.dart';
 import 'package:luna/components/modals/settings_modal.dart';
-import 'package:luna/components/pages/search.dart'; // Import the SearchBar
+import 'package:luna/components/pages/search.dart'; 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:luna/components/pages/controllers/shared_preferences.dart';
+import 'package:luna/utils/text_parser.dart';
 
 class BrowsePage extends StatefulWidget {
   const BrowsePage({Key? key}) : super(key: key);
@@ -15,23 +18,26 @@ class BrowsePage extends StatefulWidget {
 }
 
 class _BrowsePageState extends State<BrowsePage> {
-  String selectedTab = "";
-  Map<String, dynamic> selectedSources = {};
-  Map<String, dynamic> selectedFilters = {};
+  final pageData = PageData(
+    pageID: "browse",
+    pageName: "Browse",
+    pageURI: "/browse",
+    isSearching: false,
+    isFiltering: false,
+    cardItems: [],
+    searchResults: [],
+    selectedTab: '',
+    selectedSources: {},
+    selectedFilters: {},
+    tabSources: {
+      "Anime": [],
+      "Manga": ["batoto", "mangasee"],
+      "Novel": ["light_novel_pub"],
+      "Movie": [],
+      "TV Shows": []
+    },
+  );
 
-  List<String> tabNames = ["Anime", "Manga", "Novel", "Movie", "TV Shows"];
-  Map<String, List<String>> tabSources = {
-    "anime": [],
-    "manga": ["batoto", "mangasee"],
-    "novel": ["light_novel_pub"],
-    "movie": [],
-    "tvshows": []
-  };
-
-  List<ContentData> cardItems = [];
-  List<ContentData> searchResults = []; // Variable to hold search results
-  bool _isSearching = false;
-  bool _isFiltering = false;
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -42,35 +48,26 @@ class _BrowsePageState extends State<BrowsePage> {
 
   void _loadSavedSources(String tabName) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    var key = tabName.toLowerCase();
     setState(() {
-      for (var source in tabSources[key] ?? []) {
-        selectedSources[source] = prefs.getBool(source) ?? false;
+      for (var source in pageData.tabSources[sanitize(tabName)] ?? []) {
+        pageData.selectedSources[source] = prefs.getBool(source) ?? false;
       }
     });
-  }
-
-
-  void _saveSelectedSources() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    for (var entry in selectedSources.entries) {
-      prefs.setBool(entry.key, entry.value);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: tabNames.length,
+      length: pageData.tabSources.length,
       child: GestureDetector(
         onTap: () {
           setState(() {
-            _isSearching = false;
+            pageData.isSearching = false;
           });
         },
         child: Scaffold(
           appBar: AppBar(
-            title: _isSearching
+            title: pageData.isSearching
                 ? SearchInput(
                     controller: _searchController,
                     onSearchSubmitted: _onSearchSubmitted,
@@ -78,19 +75,21 @@ class _BrowsePageState extends State<BrowsePage> {
                 : const Text('Browse', key: ValueKey('Title')),
             actions: _buildAppBarActions(),
             bottom: TabBar(
-              tabs: tabNames.map((name) => Tab(text: name)).toList(),
+              tabs: pageData.tabSources.keys
+                  .map((name) => Tab(text: name))
+                  .toList(),
               onTap: (index) {
                 setState(() {
-                  _isFiltering = false;
-                  _isSearching = false;
-                  selectedTab = tabNames[index].toLowerCase().replaceAll(" ", "");
-                  cardItems.clear();
+                  pageData.isFiltering = false;
+                  pageData.isSearching = false;
+                  pageData.selectedTab = sanitize(pageData.tabSources.keys.toList()[index]);
+                  pageData.cardItems.clear();
                   _updateCardItems();
                 });
               },
             ),
           ),
-          body: _buildTabBarView(),
+          body: _buildTabBarView(context),
         ),
       ),
     );
@@ -99,9 +98,9 @@ class _BrowsePageState extends State<BrowsePage> {
   List<Widget> _buildAppBarActions() {
     List<Widget> actions = [
       Tooltip(
-        message: _isSearching ? 'Close search' : 'Search',
+        message: pageData.isSearching ? 'Close search' : 'Search',
         child: IconButton(
-          icon: Icon(_isSearching ? Icons.close : Icons.search),
+          icon: Icon(pageData.isSearching ? Icons.close : Icons.search),
           onPressed: () {
             _onSearchPressed();
           },
@@ -129,43 +128,34 @@ class _BrowsePageState extends State<BrowsePage> {
     return actions;
   }
 
-  Widget _buildTabBarView() {
+  Widget _buildTabBarView(BuildContext context) {
     return TabBarView(
-      children: [
-        for (var tabName in tabNames) _buildTabContent(tabName),
-      ],
-    );
-  }
-
-  Widget _buildTabContent(String tabName) {
-    if (_isSearching || _isFiltering && cardItems.isNotEmpty) {
-      return _buildGridView(context, searchResults);
-    } else {
-      var tabNameLower = tabName.toLowerCase().replaceAll(" ", "");
-      switch (tabNameLower) {
-        case 'manga':
-        case 'novel':
-          if (selectedTab == tabNameLower) {
+      children: pageData.tabSources.keys.map((tabName) {
+        if (pageData.isSearching || (pageData.isFiltering && pageData.cardItems.isNotEmpty)) {
+          return _buildGridView(context, pageData.searchResults);
+        } else {
+          var tabNameLower = sanitize(tabName);
+          if (pageData.selectedTab == tabNameLower) {
             return _buildSubPage(tabType: tabNameLower);
+          } else {
+            return Container(); 
           }
-          return Container();
-        default:
-          return Center(child: Text('$tabNameLower Content'));
-      }
-    }
+        }
+      }).toList(),
+    );
   }
 
   Widget _buildSubPage({required String tabType}) {
     return FutureBuilder<List<ContentData>>(
-      future: fetchBrowseList(tabType, [1], getActiveSources(selectedSources)),
+      future: fetchBrowseList(tabType, [1], getActiveSources(pageData.selectedSources)),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (snapshot.hasData) {
-          cardItems = snapshot.data!;
-          return _buildGridView(context, cardItems);
+          pageData.cardItems = snapshot.data!;
+          return _buildGridView(context, pageData.cardItems);
         } else {
           return const Center(child: Text('No data available'));
         }
@@ -239,12 +229,12 @@ class _BrowsePageState extends State<BrowsePage> {
 
   void _onSearchPressed() {
     setState(() {
-      if (_isSearching) {
-        _isSearching = false;
+      if (pageData.isSearching) {
+        pageData.isSearching = false;
         _searchController.clear();
         _onSearchClear();
       } else {
-        _isSearching = true;
+        pageData.isSearching = true;
       }
     });
   }
@@ -256,7 +246,7 @@ class _BrowsePageState extends State<BrowsePage> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return FutureBuilder<List<String>>(
-          future: fetchBrowseGenreList(selectedTab, selectedSources: selectedSources),
+          future: fetchBrowseGenreList(pageData.selectedTab, selectedSources: pageData.selectedSources),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -264,9 +254,9 @@ class _BrowsePageState extends State<BrowsePage> {
             return FiltersModal(
               options: snapshot.data!,
               onOptionsChanged: (selectedFilters) async {
-                selectedFilters = selectedFilters;
-                _isFiltering = true;
-                searchResults = await fetchSearch(cardItems, selectedTab, [1], getActiveGenres(selectedFilters), getActiveSources(selectedSources));
+                pageData.selectedFilters = selectedFilters;
+                pageData.isFiltering = true;
+                pageData.searchResults = await fetchSearch(pageData.cardItems, pageData.selectedTab, [1], getActiveGenres(selectedFilters), getActiveSources(pageData.selectedSources));
                 setState(() {});
               },
             );
@@ -282,10 +272,13 @@ class _BrowsePageState extends State<BrowsePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => SettingsModal(
-        options: tabSources[selectedTab] ?? [],
+        options: pageData.tabSources.entries
+            .where((entry) => sanitize(sanitize(entry.key)) == sanitize(pageData.selectedTab))
+            .map((entry) => entry.value)
+            .first,
         onOptionsChanged: (selected) async {
-          selectedSources = selected;
-          _saveSelectedSources(); // Save the selected sources
+          pageData.selectedSources = selected;
+          saveSelectedSources(pageData); // Save the selected sources
           setState(() {});
         },
       ),
@@ -293,26 +286,12 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   void _onSearchSubmitted(String query) async {
-    searchResults = await fetchSearch(cardItems, selectedTab, [1], getActiveGenres(selectedFilters), getActiveSources(selectedSources), searchTerm: query);
+    pageData.searchResults = await fetchSearch(pageData.cardItems, pageData.selectedTab, [1], getActiveGenres(pageData.selectedFilters), getActiveSources(pageData.selectedSources), searchTerm: query);
     setState(() {});
   }
 
-  List<String> getActiveGenres(Map<String, dynamic> selectedFilters) {
-    return selectedFilters.entries
-      .where((entry) => entry.value == true)
-      .map((entry) => entry.key)
-      .toList();
-  }
-
-  List<String> getActiveSources(Map<String, dynamic> selectedSources) {
-    return selectedSources.entries
-      .where((entry) => entry.value == true)
-      .map((entry) => entry.key)
-      .toList();
-  }
-
   void _onSearchClear() async {
-    searchResults = cardItems;
+    pageData.searchResults = pageData.cardItems;
     setState(() {});
   }
 

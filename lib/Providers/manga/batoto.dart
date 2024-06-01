@@ -120,13 +120,13 @@ class Batoto extends ContentSource {
   }
 
   @override
-  Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
+  Future<List<ContentData>> fetchContentList(ContentData cardItem, Document document) async {
     try {
       // Fetch the first page to get totalChapters
       var firstPageResponse = await http.get(Uri.parse(cardItem.contentURI));
       var firstPageDocument = parse(firstPageResponse.body);
 
-      await _fetchPageContentChapter(firstPageDocument, cardItem);
+      await _fetchPageContentChapter(cardItem, document);
 
       // Fix the ordering
       cardItem.contentList.sort((a, b) {
@@ -136,13 +136,13 @@ class Batoto extends ContentSource {
       });
 
 
-      return cardItem.contentList;
+      return cardItem.contentList.cast<ContentData>();
     } catch (e) {
       return [];
     }
   }
 
-  Future<void> _fetchPageContentChapter(Document document, ContentData cardItem) async {
+  Future<void> _fetchPageContentChapter(ContentData cardItem, Document document) async {
     try {
       var contentElementContainer = document.querySelector('[class*="space-y-5"]');
       if (contentElementContainer != null) {
@@ -193,17 +193,16 @@ class Batoto extends ContentSource {
   }
 
   @override
-  Future<List<String>> fetchContentItem(ContentData contentData) async {
+  Future<void> fetchContentItem(ContentData cardItem, ContentData contentData) async {
     try {
       final response = await http.get(Uri.parse(contentData.contentURI));
       final document = parse(response.body);
       List<Element> contentElementContainer = document.getElementsByTagName('astro-island');
 
       if (contentElementContainer.isEmpty) {
-        return ['Chapter content not found'];
+        return;
       }
       
-      List<String> imageURIs = [];
 
       for (int i = 0; i < contentElementContainer.length; i++) {
         Element astroIsland = contentElementContainer[i];
@@ -216,20 +215,20 @@ class Batoto extends ContentSource {
           
           for (var image in images) {
             var imageURI = image[1];
-            imageURIs.add(imageURI);
+            contentData.contentList.add(imageURI);
           }
         }
       }
     
-      return imageURIs;
+      return;
     } catch (e) {
-      return ['Error: $e'];
+      return;
     }
   }
 
 
   @override
-  String fetchContentImageUrl(Document document, ContentData cardItem) {
+  String fetchContentImageUrl(ContentData cardItem, Document document) {
     final imgElement = document.querySelector('img');
     final src = imgElement?.attributes['src'];
     if (src == null) {
@@ -240,7 +239,7 @@ class Batoto extends ContentSource {
   }
 
   @override
-  String fetchContentAuthor(Document document, ContentData cardItem) {
+  String fetchContentAuthor(ContentData cardItem, Document document) {
     var author = "Author not found";
     var authorElement = document.querySelector('[class*="mt-2 text-sm md:text-base opacity-80"]');
     if (authorElement != null){
@@ -250,7 +249,7 @@ class Batoto extends ContentSource {
   }
 
   @override
-  List<String> fetchContentSummary(document, ContentData cardItem) {
+  List<String> fetchContentSummary(ContentData cardItem, Document document) {
     final summaryElement = document.querySelector('[class*="limit-html-p"]');
     if (summaryElement == null) {
       return ['Summary not found'];
@@ -259,7 +258,7 @@ class Batoto extends ContentSource {
   }
 
   @override
-  List<String> fetchContentGenre(Document document, ContentData cardItem) {
+  List<String> fetchContentGenre(ContentData cardItem, Document document) {
     List<String> genres = [];
     var contentElementContainer = document.querySelector('[class*="flex items-center flex-wrap"]');
     if (contentElementContainer != null){

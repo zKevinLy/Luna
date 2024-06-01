@@ -90,10 +90,10 @@ class LightNovelPub extends ContentSource {
 
 
   @override
-  Future<List<ContentData>> fetchContentList(Document document, ContentData cardItem) async {
+  Future<List<ContentData>> fetchContentList(ContentData cardItem, Document document) async {
     try {
       const pagination = 100;
-      var headerMap = await extractHeaderInfo(document, cardItem);
+      var headerMap = await extractHeaderInfo(cardItem, document);
       
       // total chapters used to calculate number of pages
       double totalChapters = headerMap.containsKey('Chapters') && headerMap['Chapters'] != null
@@ -111,7 +111,7 @@ class LightNovelPub extends ContentSource {
           var pageDocument = parse(pageResponse.body);
           
           await lock.synchronized(() {
-            return _fetchPageContentChapter(pageDocument, cardItem);
+            return _fetchPageContentChapter(cardItem, pageDocument);
           });
         }());
       }
@@ -125,14 +125,14 @@ class LightNovelPub extends ContentSource {
         return itemIDA.compareTo(itemIDB);
       });
 
-      return cardItem.contentList;
+      return cardItem.contentList.cast<ContentData>();
     } catch (e) {
       return [];
     }
   }
 
 
-  Future<void> _fetchPageContentChapter(Document document, ContentData cardItem) async {
+  Future<void> _fetchPageContentChapter(ContentData cardItem, Document document) async {
     try {
       var contentElementContainer = document.querySelector('[class*="chapter-list"]');
       if (contentElementContainer != null) {
@@ -178,27 +178,28 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  Future<List<String>> fetchContentItem(ContentData contentData) async {
+  Future<void> fetchContentItem(ContentData cardItem, ContentData contentData) async {
     try {
       final response = await http.get(Uri.parse(contentData.contentURI));
       final document = parse(response.body);
       final contentElementContainer = document.querySelector('[class*="chapter-content"]');
       
       if (contentElementContainer == null) {
-        return [];
+        return;
       }
 
-      return contentElementContainer
-          .getElementsByTagName('p')
-          .map((element) => element.text.trim())
-          .toList();
+      contentData.contentList
+        .addAll(contentElementContainer
+        .getElementsByTagName('p')
+        .map((element) => element.text.trim()));
+
     } catch (e) {
-      return [];
+      return;
     }
   }
 
   @override
-  Future<Map<String, String>> extractHeaderInfo(Document document, ContentData cardItem) async {
+  Future<Map<String, String>> extractHeaderInfo(ContentData cardItem, Document document) async {
     var headerMap = <String, String>{};
     
     // Call in parallel
@@ -241,7 +242,7 @@ class LightNovelPub extends ContentSource {
 
 
   @override
-  String fetchContentImageUrl(Document document, ContentData cardItem) {
+  String fetchContentImageUrl(ContentData cardItem, Document document) {
     final summaryElement = document.querySelector('[class*="cover"]');
     if (summaryElement == null) {
       return 'https://via.placeholder.com/150';
@@ -256,7 +257,7 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  String fetchContentAuthor(Document document, ContentData cardItem) {
+  String fetchContentAuthor(ContentData cardItem, Document document) {
     final authorElement = document.querySelector('[itemprop*="author"]');
     if (authorElement == null || authorElement.text.trim().isEmpty) {
       return 'Author not found';
@@ -265,7 +266,7 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  List<String> fetchContentSummary(document, ContentData cardItem) {
+  List<String> fetchContentSummary(ContentData cardItem, Document document) {
     final summaryElement = document.querySelector('[class*="summary"]');
     if (summaryElement == null) {
       return ['Summary not found'];
@@ -276,7 +277,7 @@ class LightNovelPub extends ContentSource {
   }
 
   @override
-  List<String> fetchContentGenre(Document document, ContentData cardItem) {
+  List<String> fetchContentGenre(ContentData cardItem, Document document) {
     final genreElement = document.querySelector('[class*="categories"]');
     if (genreElement == null) {
       return ['Genre not found'];
