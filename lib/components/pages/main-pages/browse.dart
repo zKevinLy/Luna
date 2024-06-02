@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:luna/components/loading.dart';
 import 'package:luna/components/modals/filter_modal.dart';
 import 'package:luna/components/pages/content_layout.dart';
 import 'package:luna/models/page_info.dart';
@@ -9,6 +10,7 @@ import 'package:luna/components/pages/search.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:luna/components/pages/controllers/shared_preferences.dart';
 import 'package:luna/utils/text_parser.dart';
+import 'dart:math';
 
 class BrowsePage extends StatefulWidget {
   const BrowsePage({Key? key}) : super(key: key);
@@ -155,7 +157,7 @@ class _BrowsePageState extends State<BrowsePage> {
       future: fetchBrowseList(pageData, [1]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return buildLoadingIndicator();
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else {
@@ -170,10 +172,10 @@ class _BrowsePageState extends State<BrowsePage> {
       slivers: [
         SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: MediaQuery.of(context).size.width ~/ 200, // Adjust the width here
+            crossAxisCount: max(1, MediaQuery.of(context).size.width ~/ 200),
             mainAxisSpacing: 10.0,
             crossAxisSpacing: 10.0,
-            childAspectRatio: 0.75, // Adjust the aspect ratio here
+            
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) {
@@ -251,14 +253,14 @@ class _BrowsePageState extends State<BrowsePage> {
           future: fetchBrowseGenreList(pageData),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return buildLoadingIndicator();
             }
             return FiltersModal(
               options: pageData.selectedFilters.keys.toList(),
               onOptionsChanged: (selectedFilters) async {
                 pageData.selectedFilters = selectedFilters;
                 pageData.isFiltering = true;
-                await fetchSearch(pageData, [1], );
+                await fetchSearch(pageData, [1]);
                 setState(() {});
               },
             );

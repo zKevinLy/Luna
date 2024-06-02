@@ -35,7 +35,7 @@ Future<ContentData> fetchContentDetails(ContentData cardItem) async {
 }
 
 Future<void> fetchBrowseList(PageData pageData, List<int> pageNumbers, {String searchTerm = ""}) async {
-var sourceList = getActiveSources(pageData.selectedSources);
+  var sourceList = getActiveSources(pageData.selectedSources);
 
   // Check if the source list is empty or if it doesn't match the expected source list
   if (sourceList.isEmpty) {

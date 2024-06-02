@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:luna/components/loading.dart';
 import 'package:luna/models/content_info.dart';
-import 'package:luna/Providers/fetch_content.dart';
+import 'package:luna/providers/fetch_content.dart';
 
 class ImageViewer extends StatefulWidget {
-  final List<String> contentItems;
   final ContentData contentData;
   final int currentIndex;
   final ContentData cardItem;
 
   const ImageViewer({
-    super.key,
+    Key? key,
     required this.contentData,
-    required this.contentItems,
     required this.currentIndex,
     required this.cardItem,
-  });
+  }) : super(key: key);
 
   @override
   _ImageViewerState createState() => _ImageViewerState();
@@ -23,14 +22,12 @@ class ImageViewer extends StatefulWidget {
 class _ImageViewerState extends State<ImageViewer> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
-  List<String> _contentItems = [];
   ContentData _currentContentData = ContentData.empty();
   int _currentIndex = 1;
 
   @override
   void initState() {
     super.initState();
-    _contentItems = widget.contentItems;
     _currentContentData = widget.contentData;
     _currentIndex = widget.currentIndex;
     _scrollController.addListener(_scrollListener);
@@ -58,7 +55,6 @@ class _ImageViewerState extends State<ImageViewer> {
       _currentIndex++;
       _currentContentData = widget.cardItem.contentList[_currentIndex];
 
-      // Fetch new content items asynchronously
       await fetchContentItem(widget.cardItem, _currentContentData);
 
       setState(() {
@@ -73,49 +69,24 @@ class _ImageViewerState extends State<ImageViewer> {
       appBar: AppBar(
         title: Text(_currentContentData.title),
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: GridView.builder(
-              controller: _scrollController,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 1,
+      body: _isLoading
+          ? buildLoadingIndicator()
+          : Center(
+              child: Container(
+                width: 800, // Adjust the width as needed
+                alignment: Alignment.center,
+                child: ListView.builder(
+                  controller: _scrollController,
+                  itemCount: _currentContentData.contentList.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return Padding(
+                      padding: const EdgeInsets.all(0.0), // Adjust padding as needed
+                      child: Image.network(_currentContentData.contentList[index], fit: BoxFit.cover),
+                    );
+                  },
+                ),
               ),
-              itemCount: _contentItems.length + (_isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index < _contentItems.length) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Image.network(
-                          _contentItems[index],
-                          fit: BoxFit.fill, // Change BoxFit.cover to BoxFit.fill
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  return _buildLoadingIndicator();
-                }
-              },
             ),
-          ),
-
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingIndicator() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.0),
-      child: Center(
-        child: CircularProgressIndicator(),
-      ),
     );
   }
 }

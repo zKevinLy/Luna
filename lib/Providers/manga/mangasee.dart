@@ -257,12 +257,26 @@ class Mangasee extends ContentSource {
           final mainChapterNumber = int.parse(chapterData.chapter.substring(2, 5));
           final fractionalPart = int.parse(chapterData.chapter.substring(5)) / 10.0;
           final actualChapterNumber = mainChapterNumber + (fractionalPart == 0.0 ? 0 : fractionalPart);
-
+          if ("Chapter ${contentData.contentIndex}" != "Chapter ${actualChapterNumber+1}"){
+            continue;
+          }
           for (int i = 1; i <= totalPages; i++) {
-            final paddedContentIndex = actualChapterNumber.toStringAsFixed(fractionalPart == 0.0 ? 0 : 1).padLeft(4, '0');
+            String paddedContentIndex;
+            if (actualChapterNumber is int) {
+              // If the actualChapterNumber is an integer, pad it without fractional part
+              paddedContentIndex = actualChapterNumber.toString().padLeft(4, '0');
+            } else {
+              // If actualChapterNumber is a double, pad both integer and fractional parts separately
+              List<String> parts = actualChapterNumber.toString().split('.');
+              String integerPart = parts[0].padLeft(4, '0');
+              String fractionalPart = parts[1].padRight(1, '0');
+              paddedContentIndex = '$integerPart.$fractionalPart';
+            }
+            
             final paddedPage = i.toString().padLeft(3, '0');
             contentData.contentList.add("https://$directory/manga/${contentData.itemID}/$paddedContentIndex-$paddedPage.png");
           }
+          break;
         }
       }
     } catch (e) {

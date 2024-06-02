@@ -173,7 +173,6 @@ class ContentLayout extends StatelessWidget {
             MaterialPageRoute(
               builder: (context) => ImageViewer(
                 contentData: contentData,
-                contentItems: contentData.contentList.cast<String>(),
                 currentIndex: currentIndex,
                 cardItem: parentContentData,
               ),
