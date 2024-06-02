@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:html/parser.dart' show parse;
 import 'package:html/dom.dart';
+import 'package:luna/components/pages/controllers/shared_preferences.dart';
 import 'package:luna/models/content_info.dart';
 import 'package:luna/bases/luna_base_source.dart';
+import 'package:luna/models/page_info.dart';
 import 'package:luna/utils/text_parser.dart';
 class MangaData {
   final String id;
@@ -151,19 +153,19 @@ class Mangasee extends ContentSource {
     'Yaoi','Yuri'];
   }
 
-  Future<List<ContentData>> fetchSearch(List<ContentData> cardItems, List<int> pageNumbers, List<String> genreList, {String searchTerm = '_any'}) async {
+  Future<List<ContentData>> fetchSearch(PageData pageData, List<int> pageNumbers, {String searchTerm = '_any'}) async {
     // Sanitize the search input
     String sanitizedSearchInput = sanitize(searchTerm);
 
     // Filter card items based on title and genres
-    List<ContentData> results = cardItems.where((card) {
+    List<ContentData> results = pageData.cardItems.where((card) {
       bool matchesTitle = true;
 
       if (searchTerm != '_any'){
         matchesTitle = sanitize(card.title).contains(sanitizedSearchInput);
       }
 
-      bool matchesGenres = genreList.every((genre) => card.genre.contains(genre));
+      bool matchesGenres = getActiveGenres(pageData.selectedFilters).every((genre) => card.genre.contains(genre));
 
       return matchesTitle && matchesGenres;
     }).toList();

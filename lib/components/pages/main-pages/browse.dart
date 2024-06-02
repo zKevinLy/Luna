@@ -22,6 +22,7 @@ class _BrowsePageState extends State<BrowsePage> {
     pageID: "browse",
     pageName: "Browse",
     pageURI: "/browse",
+    searchController : TextEditingController(),
     isSearching: false,
     isFiltering: false,
     cardItems: [],
@@ -30,35 +31,36 @@ class _BrowsePageState extends State<BrowsePage> {
     selectedSources: {},
     selectedFilters: {},
     tabSources: {
-      "Anime": [],
-      "Manga": ["batoto", "mangasee"],
-      "Novel": ["light_novel_pub"],
-      "Movie": [],
-      "TV Shows": []
+      "anime": [],
+      "manga": ["batoto", "mangasee"],
+      "novel": ["light_novel_pub"],
+      "movie": [],
+      "tvshows": []
     },
   );
-
-  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _loadSavedSources("Anime");
+    _loadSavedSources("anime");
+    setState(() {});
   }
 
   void _loadSavedSources(String tabName) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      for (var source in pageData.tabSources[sanitize(tabName)] ?? []) {
-        pageData.selectedSources[source] = prefs.getBool(source) ?? false;
-      }
-    });
+    pageData.selectedSources = {};
+    for (var source in pageData.tabSources[sanitize(tabName)] ?? []) {
+      pageData.selectedSources[source] = prefs.getBool(source) ?? false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Create a list from the keys to ensure consistent order
+    final tabKeys = pageData.tabSources.keys.toList();
+
     return DefaultTabController(
-      length: pageData.tabSources.length,
+      length: tabKeys.length,
       child: GestureDetector(
         onTap: () {
           setState(() {
@@ -69,22 +71,22 @@ class _BrowsePageState extends State<BrowsePage> {
           appBar: AppBar(
             title: pageData.isSearching
                 ? SearchInput(
-                    controller: _searchController,
+                    controller: pageData.searchController,
                     onSearchSubmitted: _onSearchSubmitted,
                   )
                 : const Text('Browse', key: ValueKey('Title')),
             actions: _buildAppBarActions(),
             bottom: TabBar(
-              tabs: pageData.tabSources.keys
-                  .map((name) => Tab(text: name))
+              tabs: tabKeys
+                  .map((name) => Tab(text: name.toUpperCase()))
                   .toList(),
               onTap: (index) {
                 setState(() {
                   pageData.isFiltering = false;
                   pageData.isSearching = false;
-                  pageData.selectedTab = sanitize(pageData.tabSources.keys.toList()[index]);
+                  pageData.selectedTab = sanitize(tabKeys[index]); 
+                  _loadSavedSources(pageData.selectedTab);
                   pageData.cardItems.clear();
-                  _updateCardItems();
                 });
               },
             ),
@@ -94,6 +96,7 @@ class _BrowsePageState extends State<BrowsePage> {
       ),
     );
   }
+
 
   List<Widget> _buildAppBarActions() {
     List<Widget> actions = [
@@ -146,18 +149,17 @@ class _BrowsePageState extends State<BrowsePage> {
   }
 
   Widget _buildSubPage({required String tabType}) {
-    return FutureBuilder<List<ContentData>>(
-      future: fetchBrowseList(tabType, [1], getActiveSources(pageData.selectedSources)),
+    pageData.cardItems.clear();
+
+    return FutureBuilder<void>(
+      future: fetchBrowseList(pageData, [1]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (snapshot.hasData) {
-          pageData.cardItems = snapshot.data!;
-          return _buildGridView(context, pageData.cardItems);
         } else {
-          return const Center(child: Text('No data available'));
+          return _buildGridView(context, pageData.cardItems);
         }
       },
     );
@@ -231,7 +233,7 @@ class _BrowsePageState extends State<BrowsePage> {
     setState(() {
       if (pageData.isSearching) {
         pageData.isSearching = false;
-        _searchController.clear();
+        pageData.searchController.clear();
         _onSearchClear();
       } else {
         pageData.isSearching = true;
@@ -245,18 +247,18 @@ class _BrowsePageState extends State<BrowsePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return FutureBuilder<List<String>>(
-          future: fetchBrowseGenreList(pageData.selectedTab, selectedSources: pageData.selectedSources),
+        return FutureBuilder<void>(
+          future: fetchBrowseGenreList(pageData),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
             return FiltersModal(
-              options: snapshot.data!,
+              options: pageData.selectedFilters.keys.toList(),
               onOptionsChanged: (selectedFilters) async {
                 pageData.selectedFilters = selectedFilters;
                 pageData.isFiltering = true;
-                pageData.searchResults = await fetchSearch(pageData.cardItems, pageData.selectedTab, [1], getActiveGenres(selectedFilters), getActiveSources(pageData.selectedSources));
+                await fetchSearch(pageData, [1], );
                 setState(() {});
               },
             );
@@ -273,20 +275,20 @@ class _BrowsePageState extends State<BrowsePage> {
       backgroundColor: Colors.transparent,
       builder: (context) => SettingsModal(
         options: pageData.tabSources.entries
-            .where((entry) => sanitize(sanitize(entry.key)) == sanitize(pageData.selectedTab))
+            .where((entry) => sanitize(entry.key) == sanitize(pageData.selectedTab))
             .map((entry) => entry.value)
             .first,
         onOptionsChanged: (selected) async {
           pageData.selectedSources = selected;
-          saveSelectedSources(pageData); // Save the selected sources
+          saveSelectedSources(pageData); 
           setState(() {});
         },
       ),
     );
   }
 
-  void _onSearchSubmitted(String query) async {
-    pageData.searchResults = await fetchSearch(pageData.cardItems, pageData.selectedTab, [1], getActiveGenres(pageData.selectedFilters), getActiveSources(pageData.selectedSources), searchTerm: query);
+  void _onSearchSubmitted(String searchTerm) async {
+    await fetchSearch(pageData, [1], searchTerm: searchTerm);
     setState(() {});
   }
 
@@ -298,9 +300,5 @@ class _BrowsePageState extends State<BrowsePage> {
   Widget _buildLoadMoreItem() {
     // Implement load more item
     return Container();
-  }
-
-  void _updateCardItems() {
-    setState(() {});
   }
 }

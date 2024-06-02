@@ -6,6 +6,7 @@ class PageData {
   String pageName;
   String pageURI;
 
+  TextEditingController searchController;
   bool isSearching;
   bool isFiltering;
 
@@ -23,6 +24,7 @@ class PageData {
     required this.pageName,
     required this.pageURI,
 
+    required this.searchController,
     required this.isSearching,
     required this.isFiltering,
 
@@ -43,6 +45,7 @@ class PageData {
       pageName: '',
       pageURI: '',
 
+      searchController: TextEditingController(),
       isSearching: false,
       isFiltering: false,
 
